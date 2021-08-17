@@ -46,8 +46,8 @@ chmod 777 build.sh
 
 | 语法                                                       | 功能                                          |
 | :------------------------------------------------------- | :-------------------------------------------- |
-| python3 webpackfinder.py -u domain.com            	   	| 采集域名中的webpack                           |
-| python3 webpackfinder.py -j ./js                   	| 本地读取js信息收集                            |
+| python3 webpackfind.py -u domain.com            	   	| 采集域名中的webpack                           |
+| python3 webpackfind.py -j ./js                   	| 本地读取js信息收集                            |
 
 
 
