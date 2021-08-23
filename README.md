@@ -59,6 +59,8 @@ chmod 777 build.sh
 
 2021-08-19 修复build.sh 不能执行问题
 
+2021-08-23 修复了manifest js无法读取遍历BUG，感谢 chhyx2 师傅提交的bug。
+
 ## 0x05 反馈
 
 Webpackfind 是一个免费且开源的项目，我们欢迎任何人为其开发和进步贡献力量。

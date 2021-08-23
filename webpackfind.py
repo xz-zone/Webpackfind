@@ -7,21 +7,25 @@ from bs4 import BeautifulSoup
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
 
 class webpackfind_class(object):
 
     def __init__(self):
-        self.White = ["w3.org", "baidu.com", "sohu.com", "example.com", "purl.org", "microsoft.com", "openxmlformats.org","purl.oclc.org", "docs.oasis-open.org", "openoffice.org", "raphaeljs.com", "bing.com", "wallstreetcn.com", "mozilla.org", "mozilla.org"]
+        self.White = ["w3.org", "baidu.com", "sohu.com", "example.com", "purl.org", "microsoft.com",
+                      "openxmlformats.org", "purl.oclc.org", "docs.oasis-open.org", "openoffice.org", "raphaeljs.com",
+                      "bing.com", "wallstreetcn.com", "mozilla.org", "mozilla.org"]
 
     # 使用set对列表去重，并保持列表原来顺序
-    def unique(self,arr):
+    def unique(self, arr):
         arr1 = list(set(arr))
         arr1.sort(key=arr.index)
         return arr1  # 返回去重后的数组
 
     # 从js内容提取URL。返回链接列表：js_url[]
-    def Extract_URL(self,Js_content):
+    def Extract_URL(self, Js_content):
         pattern_raw = r"""
               (?:"|')                               # Start newline delimiter
               (
@@ -65,7 +69,7 @@ class webpackfind_class(object):
         return js_url
 
     # 提取页面源码，返回值为页面源码
-    def Extract_html(self,URL, cookie=''):
+    def Extract_html(self, URL, cookie=''):
         header = {"User-Agent": self.uarand(), "Cookie": cookie}
         try:
             re = requests.get(URL, headers=header, timeout=30, verify=False, allow_redirects=False)
@@ -89,13 +93,13 @@ class webpackfind_class(object):
                 return None
 
     # 写入文件
-    def save_result(self,filename="", content="", jurisdiction="at"):
+    def save_result(self, filename="", content="", jurisdiction="at"):
         fp = open(filename, jurisdiction, encoding='utf-8')
         fp.write(content + "\n")
         fp.close()
 
     # 创建文件夹
-    def mkdir(self,path):
+    def mkdir(self, path):
         path = path.strip()
         path = path.rstrip("\\")
         isExists = os.path.exists(path)
@@ -109,7 +113,7 @@ class webpackfind_class(object):
             return True
 
     # 清空文件夹内容
-    def del_file(self,path):
+    def del_file(self, path):
         ls = os.listdir(path)
         for i in ls:
             c_path = os.path.join(path, i)
@@ -119,7 +123,7 @@ class webpackfind_class(object):
                 os.remove(c_path)
 
     # 返回一个列表，内容为目标字符在字符串中的位置 [3, 7, 10]
-    def find_last(self,string, str):
+    def find_last(self, string, str):
         positions = []
         last_position = -1
         while True:
@@ -130,7 +134,7 @@ class webpackfind_class(object):
         return positions
 
     # 在所有的urls中提取出目标站的子域名
-    def find_subdomain(self,urls, mainurl):
+    def find_subdomain(self, urls, mainurl):
         fname = "./js/" + mainurl + "/" + mainurl + "_url_list.txt"
         self.save_result(fname, "", "w")
         url_raw = urlparse(mainurl)
@@ -154,7 +158,7 @@ class webpackfind_class(object):
         return subdomains
 
     # 遍历指定目录，显示目录下的所有文件名
-    def eachFile(self,filepath):
+    def eachFile(self, filepath):
         url = []
         self.save_result(filepath + "/result.txt", "", "w")
         pathDir = os.listdir(filepath)
@@ -167,7 +171,7 @@ class webpackfind_class(object):
         return url
 
     # 读取文件内容并打印
-    def readFile(self,filename):
+    def readFile(self, filename):
         url = []
         fopen = open(filename, 'r', encoding='utf-8')
         data = self.Extract_URL(fopen.read())
@@ -181,7 +185,7 @@ class webpackfind_class(object):
         return url
 
     # 白名单判断是否过滤那个域名
-    def White_list_domain(self,domain):
+    def White_list_domain(self, domain):
         for t in range(len(self.White)):
             if self.White[t] in domain:
                 return False
@@ -196,7 +200,7 @@ class webpackfind_class(object):
                 random.randint(0, len(json_data[ie_type[random.randint(0, len(ie_type) - 1)]]) - 1)]
 
     # url自动化遍历读取文件
-    def url_for(self,domain):
+    def url_for(self, domain):
         sys = platform.system()
         if sys == "Windows":
             path = r"./phantomjs_windows.exe"
@@ -222,41 +226,16 @@ class webpackfind_class(object):
                     for a in range(len(script)):
                         try:
                             if urlparse(domain).path:
-                                new_domain = urlparse(domain).scheme + "://" + urlparse(domain).netloc + "/" + str(urlparse(domain).path).split("/")[1] + "/"
+                                new_domain = urlparse(domain).scheme + "://" + urlparse(domain).netloc + "/" + str(urlparse(domain).path).split("/")[1]
                             else:
-                                new_domain = urlparse(domain).scheme + "://" + urlparse(domain).netloc + "/"
+                                new_domain = urlparse(domain).scheme + "://" + urlparse(domain).netloc
                             if script[a].get("src") != None:
                                 if "http" in script[a].get("src"):
                                     url.append(script[a].get("src").replace("./", "/"))
                                 elif "runtime" in script[a].get("src") or "app" in script[a].get("src") or "finance" in \
                                         script[a].get("src"):
-                                    domain_url = new_domain + "/" + script[a].get("src").replace("./", "/")
-                                    if "//" in script[a].get("src")[:2]:
-                                        domain_url = "http:" + script[a].get("src").replace("./", "/")
-                                        content = self.Extract_html(domain_url)
-                                    else:
-                                        content = self.Extract_html(domain_url)
-                                    if content == None:
-                                        try:
-                                            fname = "./js/" + urlparse(domain).netloc + "/" + urlparse(domain).netloc + "_error_js_url_list.txt"
-                                            self.save_result(fname, new_domain + script[a].get("src").replace("./", "/"))
-                                        except Exception as e:
-                                            print("[E]Write File Failed!!%s" % e)
-                                        pass
-                                    if content.find("static/js") != -1:
-                                        content = content[content.find("static/js"):-1]
-                                        content = content[:content.find(".js")]
-                                        content = re.findall(r'"(chunk-.*?)":"(.*?)"', str(content))
-                                        for co in range(len(content)):
-                                            url.append(new_domain + "/static/js/" + content[co][0] + "." + content[co][1] + ".js")
-                                    else:
-                                        content = content[content.find("js/"):-1]
-                                        content = content[:content.find(".js")]
-                                        content = re.findall(r'"(chunk-.*?)":"(.*?)"', str(content))
-                                        for co in range(len(content)):
-                                            url.append(new_domain + "/js/" + content[co][0] + "." + content[co][1] + ".js")
-                                elif "manifest" in script[a].get("src"):
-                                    domain_url = new_domain + "/" + script[a].get("src").replace("./", "/")
+                                    domain_url = new_domain + script[a].get("src").replace("./", "/")
+
                                     if "//" in script[a].get("src")[:2]:
                                         domain_url = "http:" + script[a].get("src").replace("./", "/")
                                         content = self.Extract_html(domain_url)
@@ -265,33 +244,76 @@ class webpackfind_class(object):
                                     url.append(domain_url)
                                     if content == None:
                                         try:
-                                            fname = "./js/" + urlparse(domain).netloc + "/" + urlparse(domain).netloc + "_error_js_url_list.txt"
+                                            fname = "./js/" + urlparse(domain).netloc + "/" + urlparse(
+                                                domain).netloc + "_error_js_url_list.txt"
+                                            self.save_result(fname,new_domain + script[a].get("src").replace("./", "/"))
+                                        except Exception as e:
+                                            print("[E]Write File Failed!!%s" % e)
+                                        pass
+                                    else:
+                                        if content.find("static/js") != -1:
+                                            content = content[content.find("static/js"):-1]
+                                            content = content[:content.find(".js")]
+                                            content = re.findall(r'"(chunk-.*?)":"(.*?)"', str(content))
+                                            for co in range(len(content)):
+                                                url.append(
+                                                    new_domain + "/static/js/" + content[co][0] + "." + content[co][1] + ".js")
+                                        else:
+                                            content = content[content.find("js/"):-1]
+                                            content = content[:content.find(".js")]
+                                            content = re.findall(r'"(chunk-.*?)":"(.*?)"', str(content))
+                                            for co in range(len(content)):
+                                                url.append(new_domain + "/js/" + content[co][0] + "." + content[co][1] + ".js")
+                                elif "manifest" in script[a].get("src"):
+                                    domain_url = new_domain + script[a].get("src").replace("./", "/")
+                                    if "//" in script[a].get("src")[:2]:
+                                        domain_url = "http:" + script[a].get("src").replace("./", "/")
+                                        content = self.Extract_html(domain_url)
+                                    else:
+                                        content = self.Extract_html(domain_url)
+                                    url.append(domain_url)
+                                    if content == None:
+                                        try:
+                                            fname = "./js/" + urlparse(domain).netloc + "/" + urlparse(
+                                                domain).netloc + "_error_js_url_list.txt"
                                             self.save_result(fname, domain_url)
                                         except Exception as e:
                                             print("[E]Write File Failed!!%s" % e)
                                         pass
-                                    content_b = re.findall(r'([0-9]+?):"(.*?)"', str(content))
-                                    if content_b:
-                                        for co in range(len(content_b)):
-                                            url.append(
-                                                new_domain + "/static/js/" + content_b[co][0] + "." + content_b[co][1] + ".js")
                                     else:
-                                        webpackJsonp = 0
-                                        for fomnew in range(len(script)):
-                                            if "app.js" in str(script[fomnew].get("src")):
-                                                newcontent = Extract_html(new_domain + "/" + str(script[fomnew].get("src")).replace("./","/"))
-                                                if newcontent:
-                                                    webpackJsonp = re.findall(r'webpackJsonp\(\[(\d+?)\]\,', str(newcontent))[0]
-                                                break
-                                        if webpackJsonp != 0:
-                                            for num in range(0, int(webpackJsonp) + 1):
-                                                if content.find("static/js") != -1:
-                                                    url.append(new_domain + str(urlparse(
-                                                        new_domain + "/" + str(script[fomnew].get("src")).replace("./","/")).path).replace("///", "").split("/")[1] + "/static/js/" + str(num) + ".js")
-                                                else:
-                                                    url.append(new_domain + str(urlparse(new_domain + "/" + str(script[fomnew].get("src")).replace("./","/")).path).replace("///", "").split("/")[1] + "/js/" + str(num) + ".js")
+                                        suffix = re.findall(r'([0-9]+?)\.js"', str(content))
+                                        if suffix:
+                                            suffix = "." + str(suffix[0]) + ".js"
+                                        else:
+                                            suffix = ".js"
+                                        content_b = re.findall(r'([0-9]+?):"(.*?)"', str(content))
+                                        if content_b:
+                                            for co in range(len(content_b)):
+                                                url.append(
+                                                    new_domain + "/static/js/" + content_b[co][0] + "." + content_b[co][1] + suffix)
+                                        else:
+                                            webpackJsonp = 0
+                                            for fomnew in range(len(script)):
+                                                if "app.js" in str(script[fomnew].get("src")):
+                                                    newcontent = Extract_html(
+                                                        new_domain + "/" + str(script[fomnew].get("src")).replace("./","/"))
+                                                    if newcontent:
+                                                        webpackJsonp = re.findall(r'webpackJsonp\(\[(\d+?)\]\,', str(newcontent))[0]
+                                                    break
+                                            if webpackJsonp != 0:
+                                                for num in range(0, int(webpackJsonp) + 1):
+                                                    if content.find("static/js") != -1:
+                                                        url.append(new_domain + str(urlparse(
+                                                            new_domain + "/" + str(script[fomnew].get("src")).replace(
+                                                                "./", "/")).path).replace("///", "").split("/")[
+                                                            1] + "/static/js/" + str(num) + ".js")
+                                                    else:
+                                                        url.append(new_domain + str(urlparse(
+                                                            new_domain + "/" + str(script[fomnew].get("src")).replace(
+                                                                "./", "/")).path).replace("///", "").split("/")[
+                                                            1] + "/js/" + str(num) + ".js")
                                 else:
-                                    url.append(new_domain + "/" + script[a].get("src").replace("./", "/"))
+                                    url.append(new_domain + script[a].get("src").replace("./", "/"))
                             else:
                                 if str(script[a]).find("static/js") != -1:
                                     content = str(script[a])
@@ -316,12 +338,14 @@ class webpackfind_class(object):
                                             url.append(content[co])
                                         else:
                                             url.append(
-                                                new_domain + content[co][:content[co].find(".js") + 3].replace("./",""))
+                                                new_domain + content[co][:content[co].find(".js") + 3].replace("./",
+                                                                                                               ""))
                                 else:
                                     content = re.findall(r'([0-9]+?):"(.*?)"', str(content))
                                     if content:
                                         for co in range(len(content)):
-                                            url.append(new_domain + "/js/" + content[co][0] + "." + content[co][1] + ".js")
+                                            url.append(
+                                                new_domain + "/js/" + content[co][0] + "." + content[co][1] + ".js")
                         except Exception as e:
                             print(traceback.print_exc())
                             pass
@@ -365,6 +389,7 @@ class webpackfind_class(object):
                 print("[E]Write File Failed!!%s" % e)
                 return False
 
+
 # 接收外部参数
 def parse_args():
     parser = argparse.ArgumentParser(epilog='\tExample: \r\npython ' + sys.argv[0] + " -u http://www.baidu.com")
@@ -372,6 +397,7 @@ def parse_args():
     parser.add_argument("-u", "--urlfile", help="自动化遍历html里面js")
     parser.add_argument("-s", "--subdomain", default=0, help="提取js中存在的url")
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     urllib3.disable_warnings()
