@@ -232,10 +232,8 @@ class webpackfind_class(object):
                             if script[a].get("src") != None:
                                 if "http" in script[a].get("src"):
                                     url.append(script[a].get("src").replace("./", "/"))
-                                elif "runtime" in script[a].get("src") or "app" in script[a].get("src") or "finance" in \
-                                        script[a].get("src"):
+                                elif "runtime" in script[a].get("src") or "app" in script[a].get("src") or "finance" in script[a].get("src"):
                                     domain_url = new_domain + script[a].get("src").replace("./", "/")
-
                                     if "//" in script[a].get("src")[:2]:
                                         domain_url = "http:" + script[a].get("src").replace("./", "/")
                                         content = self.Extract_html(domain_url)
@@ -286,17 +284,25 @@ class webpackfind_class(object):
                                             suffix = "." + str(suffix[0]) + ".js"
                                         else:
                                             suffix = ".js"
+                                        path = re.findall(r'src=(.*?)+"(.*?)\"\+e\+\"', str(content))
+                                        if path:
+                                            path = "/"+path[0][1]
+                                        else:
+                                            if content.find("static/js") != -1:
+                                                path = "/static/js"
+                                            elif str(script[a]).find("js/") != -1:
+                                                path = "/js/"
+                                            else:
+                                                path = ""
                                         content_b = re.findall(r'([0-9]+?):"(.*?)"', str(content))
                                         if content_b:
                                             for co in range(len(content_b)):
-                                                url.append(
-                                                    new_domain + "/static/js/" + content_b[co][0] + "." + content_b[co][1] + suffix)
+                                                url.append(new_domain + path + content_b[co][0] + "." + content_b[co][1] + suffix)
                                         else:
                                             webpackJsonp = 0
                                             for fomnew in range(len(script)):
                                                 if "app.js" in str(script[fomnew].get("src")):
-                                                    newcontent = Extract_html(
-                                                        new_domain + "/" + str(script[fomnew].get("src")).replace("./","/"))
+                                                    newcontent = self.Extract_html(new_domain + "/" + str(script[fomnew].get("src")).replace("./","/"))
                                                     if newcontent:
                                                         webpackJsonp = re.findall(r'webpackJsonp\(\[(\d+?)\]\,', str(newcontent))[0]
                                                     break
@@ -304,14 +310,9 @@ class webpackfind_class(object):
                                                 for num in range(0, int(webpackJsonp) + 1):
                                                     if content.find("static/js") != -1:
                                                         url.append(new_domain + str(urlparse(
-                                                            new_domain + "/" + str(script[fomnew].get("src")).replace(
-                                                                "./", "/")).path).replace("///", "").split("/")[
-                                                            1] + "/static/js/" + str(num) + ".js")
+                                                            new_domain + "/" + str(script[fomnew].get("src")).replace("./", "/")).path).replace("///", "").split("/")[1] + "/static/js/" + str(num) + ".js")
                                                     else:
-                                                        url.append(new_domain + str(urlparse(
-                                                            new_domain + "/" + str(script[fomnew].get("src")).replace(
-                                                                "./", "/")).path).replace("///", "").split("/")[
-                                                            1] + "/js/" + str(num) + ".js")
+                                                        url.append(new_domain + str(urlparse(new_domain + "/" + str(script[fomnew].get("src")).replace("./", "/")).path).replace("///", "").split("/")[1] + "/js/" + str(num) + ".js")
                                 else:
                                     url.append(new_domain + script[a].get("src").replace("./", "/"))
                             else:
