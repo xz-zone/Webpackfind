@@ -42,12 +42,16 @@ chmod 777 build.sh
 自动爬取本地文件
 ![two](imgs/two.png)
 
+读取txt循环读取url
+![five](imgs/five.png)
+
 ## 0x04 使用方法 
 
 | 语法                                                       | 功能                                          |
 | :------------------------------------------------------- | :-------------------------------------------- |
 | python3 webpackfind.py -u domain.com            	   	| 采集域名中的webpack                           |
 | python3 webpackfind.py -j ./js                   	| 本地读取js信息收集                            |
+| python3 webpackfind.py -a ./url_list.txt    | 读取txt循环读取url                            |
 
 
 ## 0x05 版本更新
@@ -63,7 +67,7 @@ chmod 777 build.sh
 
 2021-08-24 优化细节,解决windows生成目录问题。
 
-2021-08-26 优化细节,解决获取js路径问题。
+2021-08-26 优化细节,解决获取js路径问题,添加读取文本url地址进行扫描js。
 
 
 ## 0x05 反馈

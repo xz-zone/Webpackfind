@@ -3,6 +3,7 @@
 import requests, argparse, sys, re, jsbeautifier, os, json, random, platform, traceback
 from requests.packages import urllib3
 from urllib.parse import urlparse
+from uuid import uuid4
 from bs4 import BeautifulSoup
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from selenium import webdriver
@@ -106,10 +107,10 @@ class webpackfind_class(object):
         isExists = os.path.exists(path)
         if not isExists:
             os.makedirs(path)
-            print(path + ' 创建成功')
+            # print(path + ' 创建成功')
             return True
         else:
-            print(path + ' 目录已存在，正在清空目录重新更新文件。。。')
+            # print(path + ' 目录已存在，正在清空目录重新更新文件。。。')
             self.del_file(path)
             return True
 
@@ -135,8 +136,8 @@ class webpackfind_class(object):
         return positions
 
     # 在所有的urls中提取出目标站的子域名
-    def find_subdomain(self, urls, mainurl):
-        fname = "./js/" + mainurl + "/" + mainurl + "_url_list.txt"
+    def find_subdomain(self, urls, mainurl, domain):
+        fname = mainurl + str(urlparse(domain).netloc).replace(":", "_") + "_url_list.txt"
         self.save_result(fname, "", "w")
         url_raw = urlparse(mainurl)
         domain = url_raw.netloc
@@ -152,7 +153,6 @@ class webpackfind_class(object):
                 if subdomain not in subdomains:
                     if self.White_list_domain(subdomain):
                         subdomains.append(subdomain)
-                        fname = "./js/" + mainurl + "/" + mainurl + "_url_list.txt"
                         self.save_result(fname, subdomain)
 
         return subdomains
@@ -176,9 +176,9 @@ class webpackfind_class(object):
         fopen = open(filename, 'r', encoding='utf-8')
         data = self.Extract_URL(fopen.read())
         self.save_result(os.path.dirname(filename) + "/result.txt", "【+】" + filename)
-        print("【+】" + filename)
+        # print("【+】" + filename)
         for x in data:
-            print("      " + x)
+            # print("      " + x)
             self.save_result(os.path.dirname(filename) + "/result.txt", "      " + str(x))
             url.append(x)
         fopen.close()
@@ -200,13 +200,9 @@ class webpackfind_class(object):
                 random.randint(0, len(json_data[ie_type[random.randint(0, len(ie_type) - 1)]]) - 1)]
 
     # url自动化遍历读取文件
-    def url_for(self, domain):
+    def url_for(self, domain, path):
         #初始化路径
-        self.path = urlparse(domain).netloc.find(":")
-        if urlparse(domain).netloc.find(":") != -1:
-            self.path = urlparse(domain).netloc[:int(urlparse(domain).netloc.find(":"))]
-        else:
-            self.path = urlparse(domain).netloc
+        self.path = path
         sys = platform.system()
         if sys == "Windows":
             path = r"./phantomjs_windows.exe"
@@ -268,9 +264,10 @@ class webpackfind_class(object):
                                     url.append(domain_url)
                                     if content == None:
                                         try:
-                                            fname = "./js/" + self.path + "/" + self.path + "_error_js_url_list.txt"
+                                            fname = self.path + "/" + str(urlparse(domain).netloc).replace(":","_") + "_error_js_url_list.txt"
                                             self.save_result(fname,new_domain + script[a].get("src").replace("./", "/"))
                                         except Exception as e:
+                                            print(traceback.print_exc())
                                             print("[E]Write File Failed!!%s" % e)
                                         pass
                                     else:
@@ -303,9 +300,10 @@ class webpackfind_class(object):
                                     url.append(domain_url)
                                     if content == None:
                                         try:
-                                            fname = "./js/" + self.path + "/" + self.path + "_error_js_url_list.txt"
+                                            fname = self.path + "/" + str(urlparse(domain).netloc).replace(":","_") + "_error_js_url_list.txt"
                                             self.save_result(fname, domain_url)
                                         except Exception as e:
+                                            print(traceback.print_exc())
                                             print("[E]Write File Failed!!%s" % e)
                                         pass
                                     else:
@@ -401,38 +399,42 @@ class webpackfind_class(object):
             url = list(set(new_url))
             for u in range(len(url)):
                 content = self.Extract_html(url[u])
-                fname = "./js/" + self.path + "/" + url[u].split('/')[-1]
+                fname = self.path + "/" + url[u].split('/')[-1]
                 try:
                     fp = open(fname, "at", encoding='utf-8')
                     fp.write(jsbeautifier.beautify(content))
                     fp.close()
                 except Exception as e:
+                    print(traceback.print_exc())
                     print("[E]Write File Failed!!%s" % e)
                     return False
             try:
-                fname = "./js/" + self.path + "/" + self.path + "_js_url_list.txt"
+                fname = self.path + "/" + str(urlparse(domain).netloc).replace(":","_") + "_js_url_list.txt"
                 for u in range(len(url)):
                     self.save_result(fname, url[u])
                 return True
             except Exception as e:
+                print(traceback.print_exc())
                 print("[E]Write File Failed!!%s" % e)
                 return False
         elif content == None:
             try:
-                fname = "./js/" + self.path + "/" + self.path + "_error_js_url_list.txt"
+                fname = self.path + "/" + str(urlparse(domain).netloc).replace(":","_") + "_error_js_url_list.txt"
                 self.save_result(fname, domain)
                 return True
             except Exception as e:
+                print(traceback.print_exc())
                 print("[E]Write File Failed!!%s" % e)
                 return False
+
 # 接收外部参数
 def parse_args():
     parser = argparse.ArgumentParser(epilog='\tExample: \r\npython ' + sys.argv[0] + " -u http://www.baidu.com")
     parser.add_argument("-j", "--jsfile", help="遍历目录里面文件")
     parser.add_argument("-u", "--urlfile", help="自动化遍历html里面js")
     parser.add_argument("-s", "--subdomain", default=0, help="提取js中存在的url")
+    parser.add_argument("-a", "--all", help="读取txt循环读取url")
     return parser.parse_args()
-
 
 if __name__ == "__main__":
     urllib3.disable_warnings()
@@ -446,22 +448,41 @@ if __name__ == "__main__":
             print(info)
             print("\n==========================================扫描子域名结果=====================================================================")
     elif args.urlfile != None:
+        uid = str(uuid4()).split('-')[-1]
         if urlparse(args.urlfile).netloc:
-            path = urlparse(args.urlfile).netloc.find(":")
-            if urlparse(args.urlfile).netloc.find(":") != -1:
-                path = urlparse(args.urlfile).netloc[:int(urlparse(args.urlfile).netloc.find(":"))]
-            else:
-                path = urlparse(args.urlfile).netloc
+            print("【正在扫描】：" + args.urlfile)
+            path = uid+"/"+str(urlparse(args.urlfile).netloc).replace(":","_")
             if webpackfind.mkdir("./js/" + path + "/"):
-                info = webpackfind.url_for(args.urlfile)
+                info = webpackfind.url_for(args.urlfile,"./js/" + path + "/")
                 if info:
                     info = webpackfind.eachFile("./js/" + path + "/")
                     if args.subdomain == 0:
-                        info = webpackfind.find_subdomain(info, path)
+                        info = webpackfind.find_subdomain(info, "./js/" + path + "/", args.urlfile)
                         print("\n\n==========================================扫描子域名结果=====================================================================\n")
                         print(info)
                         print("\n==========================================扫描子域名结果=====================================================================")
+                print("【扫描成功】路径：" + "./js/" + path + "/")
         else:
+            print("python3 webpackfind.py -u http://www.baidu.com")
+    elif args.all != None:
+        uid = str(uuid4()).split('-')[-1]
+        try:
+            file = open(str(args.all), 'r', encoding='utf-8')
+            url_list = []
+            for line in file.readlines():
+                print("【正在扫描】："+line.strip())
+                if urlparse(line.strip()).netloc:
+                    path = uid+"/"+str(urlparse(line.strip()).netloc).replace(":","_")
+                    if webpackfind.mkdir("./js/" + path + "/"):
+                        info = webpackfind.url_for(line.strip(),"./js/" + path + "/")
+                        if info:
+                            info = webpackfind.eachFile("./js/" + path + "/")
+                            if args.subdomain == 0:
+                                info = webpackfind.find_subdomain(info, "./js/" + path + "/", line.strip())
+                    print("【扫描成功】路径："+"./js/" + path + "/")
+                else:
+                    print("【扫描失败】："+str(line.strip()))
+        except:
             print("python3 webpackfind.py -u http://www.baidu.com")
     else:  # URL列表
         print("python3 webpackfind.py -u http://www.baidu.com")
