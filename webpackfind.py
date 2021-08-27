@@ -81,7 +81,6 @@ class webpackfind_class(object):
             else:
                 print("[-]Status_code not 200 url:" + URL)
                 return None
-
         except Exception as e:
             try:
                 re = requests.get(URL, headers=header, timeout=30, verify=False, allow_redirects=False)
@@ -214,7 +213,7 @@ class webpackfind_class(object):
             desired_capabilities = DesiredCapabilities.PHANTOMJS.copy()
             desired_capabilities["phantomjs.page.customHeaders.User-Agent"] = self.uarand()
             desired_capabilities["phantomjs.page.settings.loadImages"] = False
-            driver = webdriver.PhantomJS(executable_path=path, desired_capabilities=desired_capabilities,service_args=['--ignore-ssl-errors=true', '--ssl-protocol=TLSv1'])
+            driver = webdriver.PhantomJS(executable_path=path, desired_capabilities=desired_capabilities, service_args=['--ignore-ssl-errors=true', '--ssl-protocol=TLSv1'])
             driver.set_page_load_timeout(20)
             driver.set_script_timeout(20)
             driver.get(domain)
@@ -251,11 +250,11 @@ class webpackfind_class(object):
                                 elif "runtime." in script[a].get("src") or "app." in script[a].get("src") or "finance." in script[a].get("src"):
                                     domain_url = new_domain + os.path.normpath(script[a].get("src")).replace("\\","/").replace( "./", "/")
                                     if urlparse(domain).path:
-                                        if script[a].get("src").find(str(urlparse(domain).path).split("/")[1]) != -1:
-                                            if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./","/")[:1] != "/":
-                                                domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
-                                            else:
-                                                domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                        if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./","/")[:1] != "/":
+                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                        else:
+                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                    domain_url = domain_url.replace("///", "/").replace("\\", "/").replace("./","/").replace("///", "/")
                                     if "//" in script[a].get("src")[:2]:
                                         domain_url = "http:" + script[a].get("src").replace("./", "/")
                                         content = self.Extract_html(domain_url)
@@ -276,22 +275,27 @@ class webpackfind_class(object):
                                             content = content[:content.find(".js")]
                                             content = re.findall(r'"(chunk-.*?)":"(.*?)"', str(content))
                                             for co in range(len(content)):
-                                                url.append(
-                                                    new_domain + "/static/js/" + content[co][0] + "." + content[co][1] + ".js")
+                                                url.append(new_domain + "/static/js/" + content[co][0] + "." + content[co][1] + ".js")
                                         else:
                                             content = content[content.find("js/"):-1]
                                             content = content[:content.find(".js")]
-                                            content = re.findall(r'"(chunk-.*?)":"(.*?)"', str(content))
-                                            for co in range(len(content)):
-                                                url.append(new_domain + "/js/" + content[co][0] + "." + content[co][1] + ".js")
+                                            if re.findall(r'\+"\."\+{(.*?)\}\[e\]\+"', str(content)):
+                                                content = re.findall(r'"(.*?):"(.*?)"',re.findall(r'\+"\."\+{(.*?)\}\[e\]\+"', str(content))[0])
+                                                if content:
+                                                    for co in range(len(content)):
+                                                        url.append(new_domain + "/js/" + str(content[co][0]).replace("\"","") + "." + content[co][1] + ".js")
+                                            else:
+                                                content = re.findall(r'"(chunk-.*?)":"(.*?)"', str(content))
+                                                for co in range(len(content)):
+                                                    url.append(new_domain + "/js/" + content[co][0] + "." + content[co][1] + ".js")
                                 elif "manifest." in script[a].get("src"):
                                     domain_url = new_domain + script[a].get("src").replace("./", "/")
                                     if urlparse(domain).path:
-                                        if script[a].get("src").find(str(urlparse(domain).path).split("/")[1]) != -1:
-                                            if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./","/")[:1] != "/":
-                                                domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
-                                            else:
-                                                domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                        if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")[:1] != "/":
+                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                        else:
+                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                    domain_url = domain_url.replace("///", "/").replace("\\", "/").replace("./", "/").replace("///", "/")
                                     if "//" in script[a].get("src")[:2]:
                                         domain_url = "http:" + script[a].get("src").replace("./", "/")
                                         content = self.Extract_html(domain_url)
@@ -325,7 +329,7 @@ class webpackfind_class(object):
                                         content_b = re.findall(r'([0-9]+?):"(.*?)"', str(content))
                                         if content_b:
                                             for co in range(len(content_b)):
-                                                url.append(new_domain + path + content_b[co][0] + "." + content_b[co][1] + suffix)
+                                                url.append(new_domain + path + str(content_b[co][0]).replace("\"", "") + "." + content_b[co][1] + suffix)
                                         else:
                                             webpackJsonp = 0
                                             for fomnew in range(len(script)):
@@ -344,12 +348,17 @@ class webpackfind_class(object):
                                 else:
                                     domain_url = new_domain + os.path.normpath(script[a].get("src").replace("./", "/"))
                                     if urlparse(domain).path:
-                                        if script[a].get("src").find(str(urlparse(domain).path).split("/")[1]) != -1:
-                                            if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./","/")[ :1] != "/":
-                                                domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
-                                            else:
-                                                domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
-                                    url.append(domain_url)
+                                        if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")[
+                                           :1] != "/":
+                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                        else:
+                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                    domain_url = domain_url.replace("///", "/").replace("\\", "/").replace("./","/").replace("///", "/")
+                                    if "//" in script[a].get("src")[:2]:
+                                        domain_url = "http:" + script[a].get("src").replace("./", "/")
+                                        url.append(domain_url)
+                                    else:
+                                        url.append(domain_url)
                             else:
                                 if str(script[a]).find("static/js") != -1:
                                     content = str(script[a])
@@ -378,7 +387,7 @@ class webpackfind_class(object):
                                     content = re.findall(r'([0-9]+?):"(.*?)"', str(content))
                                     if content:
                                         for co in range(len(content)):
-                                            url.append(new_domain + "/js/" + content[co][0] + "." + content[co][1] + ".js")
+                                            url.append(new_domain + "/js/" + str(content[co][0]).replace("\"", "") + "." + content[co][1] + ".js")
                         except Exception as e:
                             print(traceback.print_exc())
                             pass
