@@ -211,8 +211,12 @@ class webpackfind_class(object):
             return False
         try:
             desired_capabilities = DesiredCapabilities.PHANTOMJS.copy()
-            desired_capabilities["phantomjs.page.customHeaders.User-Agent"] = self.uarand()
-            desired_capabilities["phantomjs.page.settings.loadImages"] = False
+            ua = self.uarand()
+            desired_capabilities["phantomjs.page.settings.userAgent"] = ua
+            desired_capabilities["phantomjs.page.customHeaders.User-Agent"] = ua
+            desired_capabilities["phantomjs.page.settings.resourceTimeout"] = True
+            desired_capabilities["phantomjs.page.settings.disk-cache"] = True
+            desired_capabilities["phantomjs.page.settings.loadImages"] = True
             driver = webdriver.PhantomJS(executable_path=path, desired_capabilities=desired_capabilities, service_args=['--ignore-ssl-errors=true', '--ssl-protocol=TLSv1'])
             driver.set_page_load_timeout(20)
             driver.set_script_timeout(20)
