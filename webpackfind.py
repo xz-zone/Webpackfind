@@ -140,8 +140,17 @@ class webpackfind_class(object):
 
     # 在所有的urls中提取出目标站的子域名
     def find_subdomain(self, urls, mainurl, domain):
-        fname = mainurl + str(urlparse(domain).netloc).replace(":", "_") + "_url_list.txt"
+        if urlparse(domain).netloc:
+            fname = mainurl + str(urlparse(domain).netloc).replace(":", "_") + "_url_list.txt"
+        else:
+            fname = mainurl + str(urlparse(domain).path).replace(":", "_") + "_url_list.txt"
         self.save_result(fname, "", "w")
+        pattern = re.compile(
+            r'^(([a-zA-Z]{1})|([a-zA-Z]{1}[a-zA-Z]{1})|'
+            r'([a-zA-Z]{1}[0-9]{1})|([0-9]{1}[a-zA-Z]{1})|'
+            r'([a-zA-Z0-9][-_.a-zA-Z0-9]{0,61}[a-zA-Z0-9]))\.'
+            r'([a-zA-Z]{2,13}|[a-zA-Z0-9-]{2,30}.[a-zA-Z]{2,3})$'
+        )
         url_raw = urlparse(mainurl)
         domain = url_raw.netloc
         miandomain = domain
@@ -155,9 +164,14 @@ class webpackfind_class(object):
             if miandomain in subdomain:
                 if subdomain not in subdomains:
                     if self.White_list_domain(subdomain):
-                        subdomains.append(subdomain)
-                        self.save_result(fname, subdomain)
-
+                        if pattern.match(subdomain):
+                            subdomains.append(subdomain)
+                            self.save_result(fname, subdomain)
+                        else:
+                            check_ip = re.compile('(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5]):(6[0-5]{2}[0-3][0-5]|[1-5]\d{4}|[1-9]\d{1,3}|[0-9])|(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])')
+                            if check_ip.match(subdomain):
+                                subdomains.append(subdomain)
+                                self.save_result(fname, subdomain)
         return subdomains
 
     # 遍历指定目录，显示目录下的所有文件名
@@ -444,6 +458,7 @@ class webpackfind_class(object):
                 print("[E]Write File Failed!!%s" % e)
                 return False
 
+
 # 接收外部参数
 def parse_args():
     parser = argparse.ArgumentParser(epilog='\tExample: \r\npython ' + sys.argv[0] + " -u http://www.baidu.com")
@@ -460,7 +475,7 @@ if __name__ == "__main__":
     if args.jsfile != None:
         info = webpackfind.eachFile(args.jsfile)
         if args.subdomain == 0:
-            info = webpackfind.find_subdomain(info, os.path.basename(os.path.realpath(args.jsfile)))
+            info = webpackfind.find_subdomain(info, args.jsfile, os.path.basename(os.path.realpath(args.jsfile)))
             print("\n\n==========================================扫描子域名结果=====================================================================\n")
             print(info)
             print("\n==========================================扫描子域名结果=====================================================================")
