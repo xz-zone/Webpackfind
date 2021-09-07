@@ -3,12 +3,11 @@
 import requests, argparse, sys, re, jsbeautifier, os, json, random, platform, traceback
 from requests.packages import urllib3
 from urllib.parse import urlparse
-from uuid import uuid4
 from bs4 import BeautifulSoup
+from uuid import uuid4
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from selenium import webdriver
 from selenium.webdriver import DesiredCapabilities
-
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
@@ -172,12 +171,12 @@ class webpackfind_class(object):
                             if check_ip.match(subdomain):
                                 subdomains.append(subdomain)
                                 self.save_result(fname, subdomain)
+
         return subdomains
 
     # 遍历指定目录，显示目录下的所有文件名
     def eachFile(self, filepath):
         url = []
-        self.save_result(filepath + "/result.txt", "", "w")
         pathDir = os.listdir(filepath)
         for allDir in pathDir:
             child = os.path.join('%s%s' % (filepath, allDir))
@@ -235,7 +234,7 @@ class webpackfind_class(object):
             desired_capabilities["phantomjs.page.settings.resourceTimeout"] = True
             desired_capabilities["phantomjs.page.settings.disk-cache"] = True
             desired_capabilities["phantomjs.page.settings.loadImages"] = True
-            driver = webdriver.PhantomJS(executable_path=path, desired_capabilities=desired_capabilities, service_args=['--ignore-ssl-errors=true', '--ssl-protocol=TLSv1'])
+            driver = webdriver.PhantomJS(executable_path=path, desired_capabilities=desired_capabilities, service_args=['--ignore-ssl-errors=true'])
             driver.set_page_load_timeout(20)
             driver.set_script_timeout(20)
             driver.get(domain)
@@ -273,7 +272,7 @@ class webpackfind_class(object):
                                     domain_url = new_domain + os.path.normpath(script[a].get("src")).replace("\\","/").replace( "./", "/")
                                     if urlparse(domain).path:
                                         if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./","/")[:1] != "/":
-                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + os.path.dirname(urlparse(domain).path) + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                         else:
                                             domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                     domain_url = domain_url.replace("///", "/").replace("\\", "/").replace("./","/").replace("///", "/")
@@ -314,7 +313,7 @@ class webpackfind_class(object):
                                     domain_url = new_domain + script[a].get("src").replace("./", "/")
                                     if urlparse(domain).path:
                                         if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")[:1] != "/":
-                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + os.path.dirname(urlparse(domain).path) + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                         else:
                                             domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                     domain_url = domain_url.replace("///", "/").replace("\\", "/").replace("./", "/").replace("///", "/")
@@ -370,9 +369,8 @@ class webpackfind_class(object):
                                 else:
                                     domain_url = new_domain + os.path.normpath(script[a].get("src").replace("./", "/"))
                                     if urlparse(domain).path:
-                                        if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")[
-                                           :1] != "/":
-                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                        if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")[:1] != "/":
+                                            domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + os.path.dirname(urlparse(domain).path) + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                         else:
                                             domain_url = urlparse(domain).scheme + "://" + urlparse(domain).netloc + urlparse(domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                     domain_url = domain_url.replace("///", "/").replace("\\", "/").replace("./","/").replace("///", "/")
@@ -457,7 +455,30 @@ class webpackfind_class(object):
                 print(traceback.print_exc())
                 print("[E]Write File Failed!!%s" % e)
                 return False
-
+    # 检查版本更新
+    def get_version(self):
+        path = os.path.dirname(os.path.realpath(__file__))
+        if os.path.exists(path+'/version.txt'):
+            try:
+                with open(path+'/version.txt', "rt", encoding="UTF-8") as f:
+                    now_version = f.read().strip()
+                print("目前版本: \n{}".format(now_version))
+                version_url = "https://raw.githubusercontent.com/xz-zone/Webpackfind/master/version.txt"
+                res = requests.get(url=version_url, headers={"User-Agent": self.uarand()}, timeout=10, verify=False)
+                if res.status_code == 200:
+                    new_version = res.text.strip()
+                    if now_version == new_version:
+                        print("目前版本最新")
+                    else:
+                        add_version = str(str(new_version.replace("\r","").replace("\n","")).replace(str(now_version.replace("\n","")),"")).replace("。","。\n")
+                        print("更新内容如下:\n{}".format(add_version))
+                        print("目前版本非最新，建议及时更新...\n地址: https://github.com/xz-zone/Webpackfind/")
+                else:
+                    print("获取版本信息失败...")
+            except Exception as e:
+                print("获取版本信息失败...")
+        else:
+            print("目前版本非最新，建议及时更新...\n地址: https://github.com/xz-zone/Webpackfind/")
 
 # 接收外部参数
 def parse_args():
@@ -472,6 +493,7 @@ if __name__ == "__main__":
     urllib3.disable_warnings()
     args = parse_args()
     webpackfind = webpackfind_class()
+    webpackfind.get_version()
     if args.jsfile != None:
         info = webpackfind.eachFile(args.jsfile)
         if args.subdomain == 0:
@@ -483,10 +505,11 @@ if __name__ == "__main__":
         uid = str(uuid4()).split('-')[-1]
         if urlparse(args.urlfile).netloc:
             print("【正在扫描】：" + args.urlfile)
-            path = uid+"/"+str(urlparse(args.urlfile).netloc).replace(":","_")
+            path = uid+"_"+str(urlparse(args.urlfile).netloc).replace(":","_")+"/"+str(urlparse(args.urlfile).netloc).replace(":","_")
             if webpackfind.mkdir("./js/" + path + "/"):
                 info = webpackfind.url_for(args.urlfile,"./js/" + path + "/")
                 if info:
+                    webpackfind.save_result("./js/" + path + "/" + "/result.txt", "【URL】："+args.urlfile, "w")
                     info = webpackfind.eachFile("./js/" + path + "/")
                     if args.subdomain == 0:
                         info = webpackfind.find_subdomain(info, "./js/" + path + "/", args.urlfile)
@@ -504,7 +527,7 @@ if __name__ == "__main__":
             for line in file.readlines():
                 print("【正在扫描】："+line.strip())
                 if urlparse(line.strip()).netloc:
-                    path = uid+"/"+str(urlparse(line.strip()).netloc).replace(":","_")
+                    path = uid+"_all"+"/"+str(urlparse(line.strip()).netloc).replace(":","_")
                     if webpackfind.mkdir("./js/" + path + "/"):
                         info = webpackfind.url_for(line.strip(),"./js/" + path + "/")
                         if info:
