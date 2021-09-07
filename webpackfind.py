@@ -458,11 +458,20 @@ class webpackfind_class(object):
     # 检查版本更新
     def get_version(self):
         path = os.path.dirname(os.path.realpath(__file__))
+        print('''               _                      _      _             _          
+              | |                    | |   / _(_)         | |
+ __      _____| |__  _ __   __ _  ___| | _| |_ _ _ __   __| |
+ \ \ /\ / / _ \ '_ \| '_ \ / _` |/ __| |/ /  _| | '_ \ / _` |
+  \ V  V /  __/ |_) | |_) | (_| | (__|   <| | | | | | | (_| |
+   \_/\_/ \___|_.__/| .__/ \__,_|\___|_|\_\_| |_|_| |_|\__,_|       author:小洲
+                    | |                                      
+                    |_|                                   
+        ''')
         if os.path.exists(path+'/version.txt'):
             try:
                 with open(path+'/version.txt', "rt", encoding="UTF-8") as f:
                     now_version = f.read().strip()
-                print("目前版本: \n{}".format(now_version))
+                print("目前版本: \n{}\n".format(now_version))
                 version_url = "https://raw.githubusercontent.com/xz-zone/Webpackfind/master/version.txt"
                 res = requests.get(url=version_url, headers={"User-Agent": self.uarand()}, timeout=10, verify=False)
                 if res.status_code == 200:
@@ -471,8 +480,9 @@ class webpackfind_class(object):
                         print("目前版本最新")
                     else:
                         add_version = str(str(new_version.replace("\r","").replace("\n","")).replace(str(now_version.replace("\n","")),"")).replace("。","。\n")
-                        print("更新内容如下:\n{}".format(add_version))
-                        print("目前版本非最新，建议及时更新...\n地址: https://github.com/xz-zone/Webpackfind/")
+                        if add_version:
+                            print("更新内容如下:\n{}".format(add_version))
+                        print("目前版本非最新，建议及时更新...\n地址: https://github.com/xz-zone/Webpackfind/\n")
                 else:
                     print("获取版本信息失败...")
             except Exception as e:
