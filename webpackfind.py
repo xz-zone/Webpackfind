@@ -384,10 +384,16 @@ class webpackfind_class(object):
                                     content = str(script[a])
                                     content = content[content.find("static/js"):-1]
                                     content = content[:content.find(".js")]
-                                    content = re.findall(r'"(chunk-.*?)":"(.*?)"', str(content))
-                                    for co in range(len(content)):
-                                        url.append(
-                                            new_domain + "/static/js/" + content[co][0] + "." + content[co][1] + ".js")
+                                    contenta = re.findall(r'"(chunk-.*?)":"(.*?)"', str(content))
+                                    if contenta:
+                                        for co in range(len(contenta)):
+                                            url.append(new_domain + "/static/js/" + contenta[co][0] + "." + contenta[co][1] + ".js")
+                                    else:
+                                        if content.find(".chunk") != -1:
+                                            content = re.findall(r'([0-9]+?):"(.*?)"', str(content))
+                                            if content:
+                                                for co in range(len(content)):
+                                                    url.append(new_domain + "/static/js/" + str(content[co][0]).replace("\"","") + "." +content[co][1] + ".chunk.js")
                                 elif str(script[a]).find("js/") != -1:
                                     content = str(script[a])
                                     content = content[content.find("js/"):-1]
