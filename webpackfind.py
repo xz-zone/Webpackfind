@@ -186,15 +186,28 @@ class webpackfind_class(object):
                     url.append(info[u])
         return url
 
+    # 遍历指定目录，并格式化js源码
+    def eachFormatJs(self, filepath):
+        url = []
+        pathDir = os.listdir(filepath)
+        for allDir in pathDir:
+            child = os.path.join('%s%s' % (filepath, allDir))
+            # 读取文件
+            fopen = open(child, 'r', encoding='utf-8')
+            txt = jsbeautifier.beautify(fopen.read())
+            fopen.close()
+            # 写入文件
+            file_object = open(child, 'w', encoding='utf-8')
+            file_object.write(txt)
+            file_object.close()
+
     # 读取文件内容并打印
     def readFile(self, filename):
         url = []
         fopen = open(filename, 'r', encoding='utf-8')
         data = self.Extract_URL(fopen.read())
         self.save_result(os.path.dirname(filename) + "/result.txt", "【+】" + filename)
-        # print("【+】" + filename)
         for x in data:
-            # print("      " + x)
             self.save_result(os.path.dirname(filename) + "/result.txt", "      " + str(x))
             url.append(x)
         fopen.close()
@@ -461,18 +474,10 @@ class webpackfind_class(object):
                 print(traceback.print_exc())
                 print("[E]Write File Failed!!%s" % e)
                 return False
+
     # 检查版本更新
     def get_version(self):
         path = os.path.dirname(os.path.realpath(__file__))
-        print('''               _                      _      _             _          
-              | |                    | |   / _(_)         | |
- __      _____| |__  _ __   __ _  ___| | _| |_ _ _ __   __| |
- \ \ /\ / / _ \ '_ \| '_ \ / _` |/ __| |/ /  _| | '_ \ / _` |
-  \ V  V /  __/ |_) | |_) | (_| | (__|   <| | | | | | | (_| |
-   \_/\_/ \___|_.__/| .__/ \__,_|\___|_|\_\_| |_|_| |_|\__,_|       author:小洲
-                    | |                                      
-                    |_|                                   
-        ''')
         if os.path.exists(path+'/version.txt'):
             try:
                 with open(path+'/version.txt', "rt", encoding="UTF-8") as f:
@@ -498,19 +503,33 @@ class webpackfind_class(object):
 
 # 接收外部参数
 def parse_args():
+    print('''               _                      _      _             _          
+                  | |                    | |   / _(_)         | |
+     __      _____| |__  _ __   __ _  ___| | _| |_ _ _ __   __| |
+     \ \ /\ / / _ \ '_ \| '_ \ / _` |/ __| |/ /  _| | '_ \ / _` |
+      \ V  V /  __/ |_) | |_) | (_| | (__|   <| | | | | | | (_| |
+       \_/\_/ \___|_.__/| .__/ \__,_|\___|_|\_\_| |_|_| |_|\__,_|       author:小洲
+                        | |                                      
+                        |_|                                   
+            ''')
     parser = argparse.ArgumentParser(epilog='\tExample: \r\npython ' + sys.argv[0] + " -u http://www.baidu.com")
     parser.add_argument("-j", "--jsfile", help="遍历目录里面文件")
     parser.add_argument("-u", "--urlfile", help="自动化遍历html里面js")
     parser.add_argument("-s", "--subdomain", default=0, help="提取js中存在的url")
     parser.add_argument("-a", "--all", help="读取txt循环读取url")
+    parser.add_argument("-update", "--update", default=0, help="检查版本更新")
     return parser.parse_args()
 
 if __name__ == "__main__":
     urllib3.disable_warnings()
     args = parse_args()
     webpackfind = webpackfind_class()
-    webpackfind.get_version()
-    if args.jsfile != None:
+    if args.update != 0:
+        # 检查更新readFile
+        webpackfind.get_version()
+    elif args.jsfile != None:
+        # 格式化代码
+        webpackfind.eachFormatJs(args.jsfile)
         info = webpackfind.eachFile(args.jsfile)
         if args.subdomain == 0:
             info = webpackfind.find_subdomain(info, args.jsfile, os.path.basename(os.path.realpath(args.jsfile)))
