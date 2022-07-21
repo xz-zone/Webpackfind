@@ -39,9 +39,11 @@ chmod 777 build.sh
 ## 0x03 效果展示
 
 自动爬取网站
+
 ![one](imgs/one.png)
 
 自动爬取本地文件
+
 ![two](imgs/two.png)
 
 读取txt循环读取url
@@ -80,6 +82,7 @@ chmod 777 build.sh
 
 2021-09-22 优化细节,解决首页存在webpackjs代码问题。
 
+2022-07-21 优化细节,解决本地js代码文件未格式化问题,优化加更新参数才检查更新。
 
 ## 0x05 反馈
 
