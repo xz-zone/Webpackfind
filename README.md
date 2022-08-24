@@ -1,4 +1,4 @@
-# Webpack-信息收集工具
+# Webpackfind-信息收集工具
 
 郑重声明：文中所涉及的技术、思路和工具仅供以安全为目的的学习交流使用，任何人不得将其用于非法用途以及盈利等目的，否则后果自行承担。
 
@@ -27,8 +27,12 @@
 * Python环境必须是3.7以上，因为使用了异步。建议VPS环境是ubuntu20，默认是python3.8。安装模块的时候切记不要走豆瓣的源
 
 ```
+Ubuntu 运行环境
 chmod 777 build.sh
 ./build.sh
+
+Windows模块安装
+python3 -m pip install -r requirements.txt
 ```
 ![three](imgs/three.png)
 
@@ -54,10 +58,11 @@ chmod 777 build.sh
 
 | 语法                                                       | 功能                                          |
 | :------------------------------------------------------- | :-------------------------------------------- |
-| python3 webpackfind.py -u domain.com            	   	| 采集域名中的webpack                           |
-| python3 webpackfind.py -j ./js                   	| 本地读取js信息收集                            |
-| python3 webpackfind.py -a ./url_list.txt    | 读取txt循环读取url                            |
-
+| python3 webpackfind.py -u http://domain.com            	   	| 自动化遍历URL中里面js                           |
+| python3 webpackfind.py -j ./js/test.com/                   	| 遍历本地目录中的js文件并且格式化js文件、提取信息泄露                            |
+| python3 webpackfind.py -f ./url.txt    | 读取本地url文件批量遍历url中js                            |
+| python3 webpackfind.py -c "name=test;" -u http://domain.com    | 设置自定义Cookie，场景:需要登录才能爬取js信息                            |
+| python3 webpackfind.py -update 1    | 检查本地`webpackfind.py`是否与github.com是否一致                            |
 
 ## 0x05 版本更新
 
@@ -84,6 +89,12 @@ chmod 777 build.sh
 
 2022-07-21 优化细节,解决本地js代码文件未格式化问题,优化加更新参数才检查更新。
 
+2022-08-22 重构核心代码,兼容更多webpack版本问题。
+
+2022-08-23 优化细节,优化批量扫描,解决写入路径问题,增加Cookies认证遍历读取。
+
+2022-08-24 优化phantomjs文件过大问题,优化提示文字,增加协议识别模块。
+
 ## 0x05 反馈
 
 Webpackfind 是一个免费且开源的项目，我们欢迎任何人为其开发和进步贡献力量。
@@ -99,3 +110,5 @@ Webpackfind 是一个免费且开源的项目，我们欢迎任何人为其开�
 ## Stargazers over time
 
 [![Stargazers over time](https://starchart.cc/xz-zone/Webpackfind.svg)](https://starchart.cc/xz-zone/Webpackfind)
+
+<img align='right' src="https://profile-counter.glitch.me/Webpackfind/count.svg" width="200">
