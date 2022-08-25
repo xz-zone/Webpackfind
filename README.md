@@ -16,7 +16,9 @@
 
 功能：一条龙服务，只需要输入根域名即可一键化收集敏感信息。具体案例见下文。
 
-调用：脚本借用了JSFinderjs内容提取脚本，感谢Threezh1作者
+调用：脚本借用了JSFinderjs内容提取脚本，感谢Threezh1作者。
+
+支持环境：Ubuntu、Centos、Windows。
 
 
 ## 0x02 安装
@@ -36,7 +38,7 @@ python3 -m pip install -r requirements.txt
 ```
 ![three](imgs/three.png)
 
-`python3 webpackfind.py -h`
+`python3 webpackfind.py`
 
 ![help](imgs/help.png)
 
@@ -94,6 +96,8 @@ python3 -m pip install -r requirements.txt
 2022-08-23 优化细节,优化批量扫描,解决写入路径问题,增加Cookies认证遍历读取。
 
 2022-08-24 优化phantomjs文件过大问题,优化提示文字,增加协议识别模块。
+
+2022-08-25 优化细节，增加批量扫描单线程改多线程。
 
 ## 0x05 反馈
 

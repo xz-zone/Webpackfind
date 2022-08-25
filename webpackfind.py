@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-import requests, argparse, sys, re, jsbeautifier, os, json, random, platform, traceback
+import requests, argparse, sys, re, jsbeautifier, os, json, random, platform, traceback, threading, time
 from requests.packages import urllib3
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
@@ -8,18 +8,21 @@ from uuid import uuid4
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from selenium import webdriver
 from selenium.webdriver import DesiredCapabilities
+from prettytable import PrettyTable
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
 class webpackfind_class(object):
 
     def __init__(self, cookies=""):
-        self.White = ["w3.org", "baidu.com", "sohu.com", "example.com", "purl.org", "microsoft.com",
+        self.White = ["w3.org", "example.com", "purl.org", "microsoft.com",
                       "openxmlformats.org", "purl.oclc.org", "docs.oasis-open.org", "openoffice.org", "raphaeljs.com",
                       "bing.com", "wallstreetcn.com", "mozilla.org", "mozilla.org"]
         self.path = ""
         self.domain = ""
         self.cookies = cookies
+        self.path = ""
+        self.uuid = ""
 
     # 使用set对列表去重，并保持列表原来顺序
     def unique(self, arr):
@@ -405,6 +408,7 @@ class webpackfind_class(object):
                     else:
                         new_url.append(url[u])
             url = list(set(new_url))
+
             for u in range(len(url)):
                 if os.path.basename(urlparse(url[u]).path):
                     content = self.Extract_html(url[u])
@@ -421,11 +425,11 @@ class webpackfind_class(object):
                     continue
             try:
                 if domain == None:
-                    fname = self.path + "/" + str(urlparse(self.domain).netloc).replace(":","_") + "_js_url_list.txt"
+                    domainfname = self.path + "/" + str(urlparse(self.domain).netloc).replace(":","_") + "_js_url_list.txt"
                 else:
-                    fname = self.path + "/" + str(urlparse(domain).netloc).replace(":","_") + "_js_url_list.txt"
+                    domainfname = self.path + "/" + str(urlparse(domain).netloc).replace(":","_") + "_js_url_list.txt"
                 for u in range(len(url)):
-                    self.save_result(fname, url[u])
+                    self.save_result(domainfname, url[u])
                 return True
             except Exception as e:
                 print(traceback.print_exc())
@@ -434,10 +438,10 @@ class webpackfind_class(object):
         elif content == None:
             try:
                 if domain == None:
-                    fname = self.path + "/" + str(urlparse(self.domain).netloc).replace(":","_") + "_error_js_url_list.txt"
+                    domainfname = self.path + "/" + str(urlparse(self.domain).netloc).replace(":","_") + "_error_js_url_list.txt"
                 else:
-                    fname = self.path + "/" + str(urlparse(domain).netloc).replace(":","_") + "_error_js_url_list.txt"
-                self.save_result(fname, domain)
+                    domainfname = self.path + "/" + str(urlparse(domain).netloc).replace(":","_") + "_error_js_url_list.txt"
+                self.save_result(domainfname, domain)
                 return True
             except Exception as e:
                 print(traceback.print_exc())
@@ -500,6 +504,59 @@ class webpackfind_class(object):
             except Exception as e:
                 return None
 
+    # 启动函数
+    def start(self, url, i=0):
+        try:
+            scheme = urlparse(url).scheme
+            # 自动判断url地址是否添加http/https协议
+            if "http" in scheme or "https" in scheme:
+                url = url
+            else:
+                if self.Automatic_selection_scheme("http://" + url) == None:
+                    if self.Automatic_selection_scheme("https://" + url) == None:
+                        print("【扫描失败】：{}\n".format(str(url)))
+                        return False
+                    else:
+                        url = "https://" + url
+                else:
+                    url = "http://" + url
+            if urlparse(url).netloc:
+                if i == 0:
+                    # 生成随机路径
+                    self.uuid = str(uuid4()).split('-')[-1] + "/"
+
+                path = self.uuid + str(urlparse(url).netloc).replace(":", "_")
+
+                # 判断目录是否存在/不存在则创建
+                if self.mkdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path)):
+
+                    # url自动化遍历读取文件
+                    info = self.url_for(url, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path))
+                    if info:
+                        # 扫描结果存入 result.txt
+                        self.save_result(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path, 'result.txt'),"【URL】：{}".format(str(url)), "w")
+
+                        #遍历读取文件目录中的文件
+                        eachinfo = self.eachFile(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path, ''))
+
+                        # 在所有的urls中提取出目标站的子域名
+                        info = self.find_subdomain(eachinfo, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path), url)
+
+                        # 表格方式输出
+                        tb = PrettyTable(align="l", header=True, padding_width=5, field_names=["序号", "子域名"], title="扫描完成：{}".format(url))
+
+                        for i in range(len(info)):
+                            tb.add_row([i, info[i]])
+
+                        print(tb)
+
+                    print("【扫描成功】路径：{}\n".format(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path)))
+            else:
+                print("【扫描失败】：{}\n".format(str(url)))
+        except:
+            print(traceback.print_exc())
+            print(help())
+
 # 接收外部参数
 def parse_args():
     print('''               _                      _      _             _          
@@ -544,7 +601,9 @@ if __name__ == "__main__":
     args = parse_args()
     if args.cookies == None:
         args.cookies = ""
+
     webpackfind = webpackfind_class(args.cookies)
+
     if args.update != 0:
         # 检查更新readFile
         webpackfind.get_version()
@@ -553,69 +612,33 @@ if __name__ == "__main__":
         webpackfind.eachFormatJs(args.jsfile)
         eachinfo = webpackfind.eachFile(args.jsfile)
         info = webpackfind.find_subdomain(eachinfo, args.jsfile, os.path.basename(os.path.realpath(args.jsfile)))
-        print("\n\n==========================================扫描子域名结果=====================================================================\n")
-        print(info)
-        print("\n==========================================扫描子域名结果=====================================================================")
+        # 表格方式输出
+        tb = PrettyTable(align="l", header=True, padding_width=5, field_names=["序号", "子域名"], title="扫描完成：{}".format(args.jsfile))
+
+        for i in range(len(info)):
+            tb.add_row([i, info[i]])
+
+        print(tb)
     elif args.urlfile != None:
-        uid = str(uuid4()).split('-')[-1]
-        scheme = urlparse(args.urlfile).scheme
-        if "http" not in scheme or "https" not in scheme:
-            if webpackfind.Automatic_selection_scheme("http://" + args.urlfile) == None:
-                if webpackfind.Automatic_selection_scheme("https://" + args.urlfile) == None:
-                    print("【扫描失败】：" + str(args.urlfile))
-                    sys.exit(0)
-                else:
-                    args.urlfile = "https://" + args.urlfile
-            else:
-                args.urlfile = "http://" + args.urlfile
-        if urlparse(args.urlfile).netloc:
-            print("【正在扫描】：" + args.urlfile)
-            path = uid+"_"+str(urlparse(args.urlfile).netloc).replace(":","_")
-            if webpackfind.mkdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path)):
-                info = webpackfind.url_for(args.urlfile, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path))
-                if info:
-                    webpackfind.save_result(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path) + "/result.txt", "【URL】："+args.urlfile, "w")
-                    eachinfo = webpackfind.eachFile(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path)+"/")
-                    info = webpackfind.find_subdomain(eachinfo, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path), args.urlfile)
-                    print("\n\n==========================================扫描子域名结果=====================================================================\n")
-                    print(info)
-                    print("\n==========================================扫描子域名结果=====================================================================")
-                print("【扫描成功】路径：" + os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path))
-        else:
-            print("python3 webpackfind.py -u http://www.baidu.com")
-    elif args.file != None:
-        uid = str(uuid4()).split('-')[-1]
         try:
-            file = open(str(args.file), 'r', encoding='utf-8')
-            url_list = []
-            for line in file.readlines():
-                url = line.strip()
-                scheme = urlparse(url).scheme
-                if "http" not in scheme or "https" not in scheme:
-                    if webpackfind.Automatic_selection_scheme("http://"+url) == None:
-                        if webpackfind.Automatic_selection_scheme("https://" + url) == None:
-                            print("【扫描失败】：" + str(url))
-                            continue
-                        else:
-                            url = "https://" + url
-                    else:
-                        url = "http://" + url
-                print("【正在扫描】：" + url)
-                if urlparse(url).netloc:
-                    path = uid + "_all" + "/" + str(urlparse(url).netloc).replace(":", "_")
-                    if webpackfind.mkdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path)):
-                        info = webpackfind.url_for(url,os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js',path))
-                        if info:
-                            eachinfo = webpackfind.eachFile(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path)+"/")
-                            info = webpackfind.find_subdomain(eachinfo, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path), url)
-                            print("\n\n==========================================扫描子域名结果=====================================================================\n")
-                            print(info)
-                            print("\n==========================================扫描子域名结果=====================================================================")
-                    print("【扫描成功】路径：" + os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path))
-                else:
-                    print("【扫描失败】：" + str(url))
+            webpackfind.start(args.urlfile, 0)
         except:
             print(traceback.print_exc())
             print(help())
-    else:  # URL列表
+    elif args.file != None:
+        try:
+            threads = []
+            file = open(str(args.file), 'r', encoding='utf-8')
+            urllist = file.readlines()
+            for i in range(len(urllist)):
+                t = threading.Thread(target=webpackfind.start, args=(urllist[i].strip(), i))
+                threads.append(t)
+                t.start()
+                time.sleep(1)
+            for t in threads:
+                t.join()
+        except:
+            print(traceback.print_exc())
+            print(help())
+    else:
         print(help())

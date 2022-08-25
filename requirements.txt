@@ -1,4 +1,6 @@
 selenium==2.48.0
 jsbeautifier==1.14.0
 bs4==0.0.1
-idna==3.2
+idna<2.9
+requests==2.21.0
+prettytable=3.3.0
