@@ -36,7 +36,7 @@ chmod 777 build.sh
 Windows模块安装
 python3 -m pip install -r requirements.txt
 ```
-![three](imgs/threes.png)
+![threes](imgs/threes.png)
 
 `python3 webpackfind.py`
 
