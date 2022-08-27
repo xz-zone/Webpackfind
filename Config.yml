@@ -1,0 +1,256 @@
+rules:
+- rule:
+  - color: green
+    engine: dfa
+    loaded: true
+    name: Shiro
+    regex: (=deleteMe|rememberMe=)
+    scope: any
+    sensitive: true
+  - color: green
+    engine: dfa
+    loaded: true
+    name: JSON Web Token
+    regex: (eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9._-]{10,}|eyJ[A-Za-z0-9_\/+-]{10,}\.[A-Za-z0-9._\/+-]{10,})
+    scope: any
+    sensitive: true
+  - color: green
+    engine: dfa
+    loaded: true
+    name: Swagger UI
+    regex: ((swagger-ui.html)|(\"swagger\":)|(Swagger UI)|(swaggerUi))
+    scope: response body
+    sensitive: true
+  - color: green
+    engine: dfa
+    loaded: true
+    name: Ueditor
+    regex: (ueditor\.(config|all)\.js)
+    scope: response body
+    sensitive: true
+  type: Fingerprint
+- rule:
+  - color: yellow
+    engine: nfa
+    loaded: true
+    name: Email
+    regex: (([a-z0-9][_|\.])*[a-z0-9]+@([a-z0-9][-|_|\.])*[a-z0-9]+\.((?!js|css|jpg|jpeg|png|ico)[a-z]{2,}))
+    scope: response
+    sensitive: false
+  - color: orange
+    engine: nfa
+    loaded: true
+    name: Chinese IDCard
+    regex: '[^0-9]((\d{8}(0\d|10|11|12)([0-2]\d|30|31)\d{3}$)|(\d{6}(18|19|20)\d{2}(0[1-9]|10|11|12)([0-2]\d|30|31)\d{3}(\d|X|x)))[^0-9]'
+    scope: response body
+    sensitive: true
+  - color: orange
+    engine: nfa
+    loaded: true
+    name: Chinese Mobile Number
+    regex: '[^\w]((?:(?:\+|00)86)?1(?:(?:3[\d])|(?:4[5-79])|(?:5[0-35-9])|(?:6[5-7])|(?:7[0-8])|(?:8[\d])|(?:9[189]))\d{8})[^\w]'
+    scope: response body
+    sensitive: true
+  - color: cyan
+    engine: nfa
+    loaded: true
+    name: Internal IP Address
+    regex: '[^0-9]((127\.0\.0\.1)|(10\.\d{1,3}\.\d{1,3}\.\d{1,3})|(172\.((1[6-9])|(2\d)|(3[01]))\.\d{1,3}\.\d{1,3})|(192\.168\.\d{1,3}\.\d{1,3}))'
+    scope: response
+    sensitive: true
+  - color: green
+    engine: nfa
+    loaded: true
+    name: MAC Address
+    regex: (^([a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5})|[^a-zA-Z0-9]([a-fA-F0-9]{2}(:[a-fA-F0-9]{2}){5}))
+    scope: response
+    sensitive: true
+  - color: orange
+    engine: nfa
+    loaded: false
+    name: Chinese Bank Card ID
+    regex: '[^0-9]([1-9]\d{12,18})[^0-9]'
+    scope: response
+    sensitive: true
+  type: Basic Information
+- rule:
+  - color: cyan
+    engine: dfa
+    loaded: true
+    name: RCE Paramters
+    regex: ((cmd=)|(exec=)|(command=)|(execute=)|(ping=)|(query=)|(jump=)|(code=)|(reg=)|(do=)|(func=)|(arg=)|(option=)|(load=)|(process=)|(step=)|(read=)|(function=)|(feature=)|(exe=)|(module=)|(payload=)|(run=)|(daemon=)|(upload=)|(dir=)|(download=)|(log=)|(ip=)|(cli=))
+    scope: request
+    sensitive: true
+  - color: yellow
+    engine: dfa
+    loaded: true
+    name: Java Deserialization
+    regex: (javax\.faces\.ViewState)
+    scope: response
+    sensitive: true
+  - color: cyan
+    engine: dfa
+    loaded: true
+    name: Debug Logic Parameters
+    regex: ((access=)|(adm=)|(admin=)|(alter=)|(cfg=)|(clone=)|(config=)|(create=)|(dbg=)|(debug=)|(delete=)|(disable=)|(edit=)|(enable=)|(exec=)|(execute=)|(grant=)|(load=)|(make=)|(modify=)|(rename=)|(reset=)|(root=)|(shell=)|(test=)|(toggl=))
+    scope: request
+    sensitive: true
+  - color: cyan
+    engine: nfa
+    loaded: true
+    name: URL As A Value
+    regex: (=(https?://.*|https?%3(a|A)%2(f|F)%2(f|F).*))
+    scope: request
+    sensitive: true
+  - color: yellow
+    engine: dfa
+    loaded: true
+    name: Upload Form
+    regex: (type=\"file\")
+    scope: response body
+    sensitive: true
+  - color: cyan
+    engine: nfa
+    loaded: true
+    name: DoS Paramters
+    regex: ((size=)|(page=)|(num=))
+    scope: request
+    sensitive: false
+  - color: yellow
+    engine: nfa
+    loaded: true
+    name: JSONP Response
+    regex: (^(\w.*?)\()
+    scope: response body
+    sensitive: false
+  type: Maybe Vulnerability
+- rule:
+  - color: yellow
+    engine: dfa
+    loaded: true
+    name: OSS
+    regex: ([A|a]ccess[K|k]ey[I|i][d|D]|[A|a]ccess[K|k]ey[S|s]ecret)
+    scope: any
+    sensitive: true
+  - color: green
+    engine: nfa
+    loaded: true
+    name: Amazon AWS URL
+    regex: (((([a-zA-Z0-9._-]+\.s3|s3)(\.|\-)+[a-zA-Z0-9._-]+|[a-zA-Z0-9._-]+\.s3|s3)\.amazonaws\.com)|(s3:\/\/[a-zA-Z0-9-\.\_]+)|(s3.console.aws.amazon.com\/s3\/buckets\/[a-zA-Z0-9-\.\_]+)|(amzn\.mws\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})|(ec2-[0-9-]+.cd-[a-z0-9-]+.compute.amazonaws.com)|(us[_-]?east[_-]?1[_-]?elb[_-]?amazonaws[_-]?com))
+    scope: response body
+    sensitive: true
+  - color: green
+    engine: nfa
+    loaded: true
+    name: Amazon AWS Region
+    regex: ((us(-gov)?|ap|ca|cn|eu|sa)-(central|(north|south)?(east|west)?)-\d)
+    scope: response body
+    sensitive: true
+  - color: blue
+    engine: nfa
+    loaded: true
+    name: SSH Private Key
+    regex: ([-]+BEGIN [^\s]+ PRIVATE KEY[-])
+    scope: response body
+    sensitive: true
+  - color: green
+    engine: nfa
+    loaded: true
+    name: Windows File/Dir Path
+    regex: '[^\w](([a-zA-Z]:\\(?:\w+\\?)*)|([a-zA-Z]:\\(?:\w+\\)*\w+\.\w+))'
+    scope: response
+    sensitive: true
+  - color: yellow
+    engine: nfa
+    loaded: true
+    name: Password Field
+    regex: ((|'|")([p](ass|wd|asswd|assword))(|'|")(:|=)( |)('|")(.*?)('|")(|,))
+    scope: response body
+    sensitive: false
+  - color: green
+    engine: nfa
+    loaded: true
+    name: Username Field
+    regex: ((|'|")([u](ser|name|ame|sername))(|'|")(:|=)( |)('|")(.*?)('|")(|,))
+    scope: response body
+    sensitive: false
+  - color: green
+    engine: dfa
+    loaded: true
+    name: WeCom Key
+    regex: ([c|C]or[p|P]id|[c|C]orp[s|S]ecret)
+    scope: response body
+    sensitive: true
+  - color: yellow
+    engine: nfa
+    loaded: true
+    name: JDBC Connection
+    regex: (jdbc:[a-z:]+://[a-z0-9\.\-_:;=/@?,&]+)
+    scope: any
+    sensitive: false
+  - color: yellow
+    engine: nfa
+    loaded: true
+    name: Authorization Header
+    regex: ((basic [a-z0-9=:_\+\/-]{5,100})|(bearer [a-z0-9_.=:_\+\/-]{5,100}))
+    scope: response body
+    sensitive: false
+  - color: green
+    engine: nfa
+    loaded: true
+    name: Github Access Token
+    regex: ([a-z0-9_-]*:[a-z0-9_\-]+@github\.com*)
+    scope: response body
+    sensitive: false
+  - color: cyan
+    engine: nfa
+    loaded: true
+    name: Microsoft Teams Webhook
+    regex: (https://outlook\.office\.com/webhook/[a-z0-9@-]+/IncomingWebhook/[a-z0-9-]+/[a-z0-9-]+)
+    scope: response body
+    sensitive: false
+  - color: cyan
+    engine: nfa
+    loaded: true
+    name: Zoho Webhook
+    regex: (https://creator\.zoho\.com/api/[a-z0-9/_.-]+\?authtoken=[a-z0-9]+)
+    scope: response body
+    sensitive: false
+  - color: cyan
+    engine: nfa
+    loaded: true
+    name: Sonarqube Token
+    regex: (sonar.{0,50}(?:"|\'|`)?[0-9a-f]{40}(?:"|\'|`)?)
+    scope: response body
+    sensitive: false
+  type: Sensitive Information
+- rule:
+  - color: gray
+    engine: nfa
+    loaded: true
+    name: Linkfinder
+    regex: (?:"|')(((?:[a-zA-Z]{1,10}://|//)[^"'/]{1,}\.[a-zA-Z]{2,}[^"']{0,})|((?:/|\.\./|\./)[^"'><,;|*()(%%$^/\\\[\]][^"'><,;|()]{1,})|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{1,}\.(?:[a-zA-Z]{1,4}|action)(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-/]{1,}/[a-zA-Z0-9_\-/]{3,}(?:[\?|#][^"|']{0,}|))|([a-zA-Z0-9_\-]{1,}\.(?:php|asp|aspx|jsp|json|action|html|js|txt|xml)(?:[\?|#][^"|']{0,}|)))(?:"|')
+    scope: response body
+    sensitive: true
+  - color: pink
+    engine: dfa
+    loaded: true
+    name: Source Map
+    regex: (\.js\.map)
+    scope: response body
+    sensitive: true
+  - color: magenta
+    engine: nfa
+    loaded: true
+    name: HTML Notes
+    regex: (<!--[\s\S]*?-->)
+    scope: response body
+    sensitive: true
+  - color: green
+    engine: dfa
+    loaded: true
+    name: Create Script
+    regex: (createElement\(\"script\"\))
+    scope: response body
+    sensitive: true
+  type: Other

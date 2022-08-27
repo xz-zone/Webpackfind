@@ -3,4 +3,5 @@ jsbeautifier==1.14.0
 bs4==0.0.1
 idna<2.9
 requests==2.21.0
-prettytable=3.3.0
+prettytable==3.3.0
+PyYaml==6.0

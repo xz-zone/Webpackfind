@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-import requests, argparse, sys, re, jsbeautifier, os, json, random, platform, traceback, threading, time
+import requests, argparse, sys, re, jsbeautifier, os, json, random, platform, traceback, threading, yaml
 from requests.packages import urllib3
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
@@ -9,20 +9,23 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from selenium import webdriver
 from selenium.webdriver import DesiredCapabilities
 from prettytable import PrettyTable
+from queue import Queue
+
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 
-class webpackfind_class(object):
+class webpackfind_class(threading.Thread):
 
-    def __init__(self, cookies=""):
-        self.White = ["w3.org", "example.com", "purl.org", "microsoft.com",
-                      "openxmlformats.org", "purl.oclc.org", "docs.oasis-open.org", "openoffice.org", "raphaeljs.com",
-                      "bing.com", "wallstreetcn.com", "mozilla.org", "mozilla.org"]
-        self.path = ""
+    def __init__(self, urllist_q=[], cookies="", uuid=""):
+        threading.Thread.__init__(self)
+        self.urllist_q = urllist_q
+        self.White = ["w3.org", "example.com", "purl.org", "microsoft.com","openxmlformats.org", "purl.oclc.org", "docs.oasis-open.org", "openoffice.org", "raphaeljs.com","bing.com", "wallstreetcn.com", "mozilla.org", "mozilla.org"]
         self.domain = ""
         self.cookies = cookies
-        self.path = ""
-        self.uuid = ""
+        self.uuid = uuid
+        self.rulesJson = []
+        # 初始化加载规则库
+        self.getyml()
 
     # 使用set对列表去重，并保持列表原来顺序
     def unique(self, arr):
@@ -96,7 +99,7 @@ class webpackfind_class(object):
                     raw = re.content.decode("utf-8", "ignore")
                     return raw
                 else:
-                    print("[-]Status_code not 200 url:"+URL)
+                    print("[-]Status_code not 200 url:" + URL)
                     return None
             except Exception as e:
                 return None
@@ -179,15 +182,19 @@ class webpackfind_class(object):
         return subdomains
 
     # 遍历指定目录，显示目录下的所有文件名
-    def eachFile(self, filepath):
+    def eachFile(self, filepath="",type=1):
         url = []
         pathDir = os.listdir(filepath)
         for allDir in pathDir:
-            child = os.path.join('%s%s' % (filepath, allDir))
-            info = self.readFile(child)
-            if info:
-                for u in range(len(info)):
-                    url.append(info[u])
+            if os.path.splitext(allDir)[-1] != ".txt":
+                child = os.path.join('%s%s' % (filepath, allDir))
+                if type == 1:
+                    info = self.readFile(child)
+                    if info:
+                        for u in range(len(info)):
+                            url.append(info[u])
+                else:
+                    url.append(child)
         return url
 
     # 遍历指定目录，并格式化js源码
@@ -226,21 +233,20 @@ class webpackfind_class(object):
     # 随机获取ua库
     def uarand(self):
         ie_type = ["chrome", "opera", "firefox", "internetexplorer", "safari"]
-        with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pc_ua.json'), 'r', encoding='utf8')as fp:
+        with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pc_ua.json'), 'r', encoding='utf8') as fp:
             json_data = json.load(fp)
             return json_data[ie_type[random.randint(0, len(ie_type) - 1)]][
                 random.randint(0, len(json_data[ie_type[random.randint(0, len(ie_type) - 1)]]) - 1)]
 
     # url自动化遍历读取文件
     def url_for(self, domain, path):
-        #初始化路径
-        self.path = path
+        # 初始化路径
         self.domain = domain
         sys = platform.system()
         if sys == "Windows":
-            path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'phantomjs_windows.exe')
+            jspath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'phantomjs_windows.exe')
         elif sys == "Linux":
-            path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'phantomjs_liunx_x64')
+            jspath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'phantomjs_liunx_x64')
         else:
             return False
         try:
@@ -251,7 +257,7 @@ class webpackfind_class(object):
             desired_capabilities["phantomjs.page.settings.resourceTimeout"] = True
             desired_capabilities["phantomjs.page.settings.disk-cache"] = True
             desired_capabilities["phantomjs.page.settings.loadImages"] = True
-            driver = webdriver.PhantomJS(executable_path=path, desired_capabilities=desired_capabilities, service_args=['--ignore-ssl-errors=true'])
+            driver = webdriver.PhantomJS(executable_path=jspath, desired_capabilities=desired_capabilities, service_args=['--ignore-ssl-errors=true'])
             driver.set_page_load_timeout(20)
             driver.set_script_timeout(20)
             driver.get(domain)
@@ -307,7 +313,7 @@ class webpackfind_class(object):
                             try:
                                 scheme = "http:"
                                 if urlparse(domain).scheme != "":
-                                    scheme = str(urlparse(domain).scheme)+":"
+                                    scheme = str(urlparse(domain).scheme) + ":"
                                 if urlparse(domain).path:
                                     new_domain = scheme + "//" + urlparse(domain).netloc + "/" + str(urlparse(domain).path).split("/")[1]
                                 else:
@@ -316,8 +322,8 @@ class webpackfind_class(object):
                                     domain_url = new_domain + os.path.normpath(script[a].get("src").replace("./", "/"))
                                     if urlparse(domain).path:
                                         if script[a].get("data-main").find(str(urlparse(new_domain).path).split("/")[1]) != -1:
-                                            domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + os.path.normpath(script[a].get("data-main")).replace("\\","/").replace("./", "/")
-                                            if os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./","/")[:1] != "/":
+                                            domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")
+                                            if os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")[:1] != "/":
                                                 domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + "/" + os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")
                                             else:
                                                 domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")
@@ -329,23 +335,23 @@ class webpackfind_class(object):
                                         if urlparse(os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).netloc == "":
                                             domain_url = new_domain + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                         else:
-                                            domain_url = new_domain + str(scheme+os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).replace(new_domain, "")
+                                            domain_url = new_domain + str(scheme + os.path.normpath(script[a].get("src")).replace("\\","/").replace("./", "/")).replace(new_domain, "")
                                         if urlparse(new_domain).path:
                                             if os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")[:1] != "/":
                                                 if urlparse(os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).netloc == "":
                                                     domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                                 else:
-                                                    domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + "/" + str(scheme+os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).replace(new_domain, "")
+                                                    domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + "/" + str(scheme + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).replace(new_domain, "")
                                             else:
                                                 if urlparse(os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).netloc == "":
                                                     domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                                 else:
-                                                    domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + str(scheme+os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).replace(new_domain, "")
+                                                    domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + str(scheme + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).replace(new_domain, "")
                                         content = self.Extract_html(domain_url)
                                         if content == None:
                                             try:
-                                                fname = self.path + "/" + str(urlparse(new_domain).netloc).replace(":","_") + "_error_js_url_list.txt"
-                                                self.save_result(fname, new_domain + script[a].get("src").replace("./", "/"))
+                                                fname = path + "/" + str(urlparse(new_domain).netloc).replace(":", "_") + "_error_js_url_list.txt"
+                                                self.save_result(fname,new_domain + script[a].get("src").replace("./", "/"))
                                             except Exception as e:
                                                 print(traceback.print_exc())
                                                 print("[E]Write File Failed!!%s" % e)
@@ -363,6 +369,8 @@ class webpackfind_class(object):
                                                 if self.analysis(content) == True:
                                                     if domain_url.find("static/js"):
                                                         new_domain = domain_url[:domain_url.find("/js")] + "/js/"
+                                            else:
+                                                content = None
                                             if self.analysis(content) == True:
                                                 if re.findall(r'([0-9]+?):(\s){0,1}"([a-zA-Z0-9]*?)"', str(content)):
                                                     content = re.findall(r'([0-9]+?):(\s){0,1}"([a-zA-Z0-9]*?)"', str(content))
@@ -372,16 +380,17 @@ class webpackfind_class(object):
                                                                 if content[co][-1:][0] == "string" or str(content[co][-1:][0]) == "visible":
                                                                     continue
                                                                 else:
-                                                                    url.append(new_domain + str(content[co][:1][0]).replace("\"","") + "." + str(content[co][-1:][0]) + ".js")
+                                                                    url.append(new_domain + str(content[co][:1][0]).replace("\"", "") + "." + str(content[co][-1:][0]) + ".js")
                                                 elif re.findall(r'"(chunk-.*?)":(\s){0,1}"(.*?)"', str(content)):
                                                     content = re.findall(r'"(chunk-.*?)":(\s){0,1}"(.*?)"', str(content))
                                                     for co in range(len(content)):
                                                         url.append(new_domain + str(content[co][:1][0]) + "." + str(content[co][-1:][0]) + ".js")
                                                 elif re.findall(r'\+"\."\+{(.*?)\}\[e\]\+"', str(content)):
-                                                    content = re.findall(r'"(.*?):"(.*?)"', re.findall(r'\+"\."\+{(.*?)\}\[e\]\+"', str(content))[0])
+                                                    content = re.findall(r'"(.*?):"(.*?)"',re.findall(r'\+"\."\+{(.*?)\}\[e\]\+"',str(content))[0])
                                                     if content:
                                                         for co in range(len(content)):
-                                                            url.append(new_domain + str(content[co][:1][0]).replace("\"","") + "." + str(content[co][-1:][0]) + ".js")
+                                                            url.append(
+                                                                new_domain + str(content[co][:1][0]).replace("\"", "") + "." + str(content[co][-1:][0]) + ".js")
                                     else:
                                         if urlparse(script[a].get("src").replace("./", "/")).scheme == "":
                                             if urlparse(script[a].get("src").replace("./", "/")).netloc != "":
@@ -412,7 +421,7 @@ class webpackfind_class(object):
             for u in range(len(url)):
                 if os.path.basename(urlparse(url[u]).path):
                     content = self.Extract_html(url[u])
-                    fname = self.path + "/" + url[u].split('/')[-1]
+                    fname = path + "/" + url[u].split('/')[-1]
                     try:
                         fp = open(fname, "at", encoding='utf-8')
                         fp.write(jsbeautifier.beautify(content))
@@ -425,9 +434,9 @@ class webpackfind_class(object):
                     continue
             try:
                 if domain == None:
-                    domainfname = self.path + "/" + str(urlparse(self.domain).netloc).replace(":","_") + "_js_url_list.txt"
+                    domainfname = path + "/" + str(urlparse(self.domain).netloc).replace(":", "_") + "_js_url_list.txt"
                 else:
-                    domainfname = self.path + "/" + str(urlparse(domain).netloc).replace(":","_") + "_js_url_list.txt"
+                    domainfname = path + "/" + str(urlparse(domain).netloc).replace(":", "_") + "_js_url_list.txt"
                 for u in range(len(url)):
                     self.save_result(domainfname, url[u])
                 return True
@@ -438,9 +447,9 @@ class webpackfind_class(object):
         elif content == None:
             try:
                 if domain == None:
-                    domainfname = self.path + "/" + str(urlparse(self.domain).netloc).replace(":","_") + "_error_js_url_list.txt"
+                    domainfname = path + "/" + str(urlparse(self.domain).netloc).replace(":", "_") + "_error_js_url_list.txt"
                 else:
-                    domainfname = self.path + "/" + str(urlparse(domain).netloc).replace(":","_") + "_error_js_url_list.txt"
+                    domainfname = path + "/" + str(urlparse(domain).netloc).replace(":", "_") + "_error_js_url_list.txt"
                 self.save_result(domainfname, domain)
                 return True
             except Exception as e:
@@ -461,7 +470,7 @@ class webpackfind_class(object):
 
     # 检查版本更新
     def get_version(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),'version.txt')
+        path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'version.txt')
         if os.path.exists(path):
             try:
                 with open(path, "rt", encoding="UTF-8") as f:
@@ -474,7 +483,8 @@ class webpackfind_class(object):
                     if now_version == new_version:
                         print("目前版本最新")
                     else:
-                        add_version = str(str(new_version.replace("\r","").replace("\n","")).replace(str(now_version.replace("\n","")),"")).replace("。","。\n")
+                        add_version = str(str(new_version.replace("\r", "").replace("\n", "")).replace(
+                            str(now_version.replace("\n", "")), "")).replace("。", "。\n")
                         if add_version:
                             print("更新内容如下:\n{}".format(add_version))
                         print("目前版本非最新，建议及时更新...\n地址: https://github.com/xz-zone/Webpackfind/\n")
@@ -504,8 +514,52 @@ class webpackfind_class(object):
             except Exception as e:
                 return None
 
+    # 读取yml规则库
+    def getyml(self):
+        if len(self.rulesJson) == 0:
+            return False
+        try:
+            file = open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Config.yml'), 'r', encoding="utf-8")
+            file_data = file.read()
+            file.close()
+            data = yaml.load(file_data, Loader=yaml.FullLoader)
+            rules = data.get("rules")
+            # Fingerprint 指纹
+            # Basic Information 基本信息
+            # Maybe Vulnerability 可能是脆弱性
+            # Sensitive Information 敏感信息
+            # Other 另外
+            for i in range(len(rules)):
+                for r in range(len(rules[i]["rule"])):
+                    self.rulesJson.append({"type_name": rules[i]["type"], "name": rules[i]["rule"][r]["name"], "regex": rules[i]["rule"][r]["regex"]})
+            return self.rulesJson
+        except:
+            print(traceback.print_exc())
+            return False
+
+    # 匹配规则库
+    def Matching_rules(self, filepath=[]):
+        for filename in filepath:
+            fopen = open(filename, 'r', encoding='utf-8')
+            data = str(fopen.read())
+            fopen.close()
+            self.save_result(os.path.dirname(filename) + "/result_rules.txt", "【+】" + filename)
+            tb = PrettyTable(align="l", header=True, padding_width=5, field_names=["模块", "名称", "正则", "内容"], title="路径：{}".format(filename))
+            for i in range(len(self.rulesJson)):
+                try:
+                    r = re.compile(self.rulesJson[i]['regex'])
+                    result = r.findall(str(data))
+                    for i in result:
+                        tb.add_row([self.rulesJson[i]['type_name'], self.rulesJson[i]['name'], self.rulesJson[i]['regex'], result[i]])
+                except Exception as e:
+                    pass
+                    # print(e)
+                    # print(self[i]['type_name'] + ":" + self.rulesJson[i]['name'] + "===>" +self.rulesJson[i]['regex'])
+            self.save_result(os.path.dirname(filename) + "/result_rules.txt", tb.get_string())
+            print(tb)
+
     # 启动函数
-    def start(self, url, i=0):
+    def go_start(self, url, i=0, uuid=""):
         try:
             scheme = urlparse(url).scheme
             # 自动判断url地址是否添加http/https协议
@@ -521,26 +575,29 @@ class webpackfind_class(object):
                 else:
                     url = "http://" + url
             if urlparse(url).netloc:
-                if i == 0:
-                    # 生成随机路径
-                    self.uuid = str(uuid4()).split('-')[-1] + "/"
 
-                path = self.uuid + str(urlparse(url).netloc).replace(":", "_")
+                path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', self.uuid + str(urlparse(url).netloc).replace(":", "_"), '')
 
                 # 判断目录是否存在/不存在则创建
-                if self.mkdir(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path)):
+                if self.mkdir(path):
 
                     # url自动化遍历读取文件
-                    info = self.url_for(url, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path))
+                    info = self.url_for(url, path)
                     if info:
                         # 扫描结果存入 result.txt
-                        self.save_result(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path, 'result.txt'),"【URL】：{}".format(str(url)), "w")
+                        self.save_result(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', self.uuid + str(urlparse(url).netloc).replace(":", "_"),'result.txt'), "【URL】：{}".format(str(url)), "w")
 
-                        #遍历读取文件目录中的文件
-                        eachinfo = self.eachFile(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path, ''))
+                        # 遍历读取文件目录中的文件
+                        eachinfo = self.eachFile(path, 1)
+
+                        # 遍历读取文件路径
+                        eachfile = self.eachFile(path, 2)
+
+                        # 匹配规则库
+                        self.Matching_rules(eachfile)
 
                         # 在所有的urls中提取出目标站的子域名
-                        info = self.find_subdomain(eachinfo, os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path), url)
+                        info = self.find_subdomain(eachinfo, path, url)
 
                         # 表格方式输出
                         tb = PrettyTable(align="l", header=True, padding_width=5, field_names=["序号", "子域名"], title="扫描完成：{}".format(url))
@@ -550,12 +607,19 @@ class webpackfind_class(object):
 
                         print(tb)
 
-                    print("【扫描成功】路径：{}\n".format(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'js', path)))
+                    print("【扫描成功】路径：{}\n".format(path))
             else:
                 print("【扫描失败】：{}\n".format(str(url)))
         except:
             print(traceback.print_exc())
             print(help())
+
+    # 主函数
+    def run(self):
+        while not self.urllist_q.empty():
+            url, i = self.urllist_q.get()
+            self.go_start(url, i)
+            self.urllist_q.task_done()
 
 # 接收外部参数
 def parse_args():
@@ -575,6 +639,7 @@ def parse_args():
     parser.add_argument("-c", "--cookies", help="设置自定义Cookie，场景:需要登录才能爬取js信息")
     parser.add_argument("-update", "--update", type=int, default=0, help="检查版本更新")
     return parser.parse_args()
+
 
 # 帮助文档输出
 def help():
@@ -596,19 +661,25 @@ def help():
         python3 webpackfind.py -update 1
          '''
 
+
 if __name__ == "__main__":
     urllib3.disable_warnings()
     args = parse_args()
     if args.cookies == None:
         args.cookies = ""
 
-    webpackfind = webpackfind_class(args.cookies)
+    # 声明全局uuid
+    uuid = str(uuid4()).split('-')[-1] + "/"
+
+    # 声明多线程队列
+    urllist = Queue(-1)
 
     if args.update != 0:
         # 检查更新readFile
-        webpackfind.get_version()
+        webpackfind_class(urllist, args.cookies, uuid).get_version()
     elif args.jsfile != None:
         # 格式化代码
+        webpackfind = webpackfind_class([], args.cookies, uuid)
         webpackfind.eachFormatJs(args.jsfile)
         eachinfo = webpackfind.eachFile(args.jsfile)
         info = webpackfind.find_subdomain(eachinfo, args.jsfile, os.path.basename(os.path.realpath(args.jsfile)))
@@ -621,20 +692,23 @@ if __name__ == "__main__":
         print(tb)
     elif args.urlfile != None:
         try:
-            webpackfind.start(args.urlfile, 0)
+            webpackfind_class(urllist, args.cookies, uuid).go_start(args.urlfile, 0)
         except:
             print(traceback.print_exc())
             print(help())
     elif args.file != None:
         try:
-            threads = []
+            urllistResult = []
             file = open(str(args.file), 'r', encoding='utf-8')
-            urllist = file.readlines()
-            for i in range(len(urllist)):
-                t = threading.Thread(target=webpackfind.start, args=(urllist[i].strip(), i))
+            filelist = file.readlines()
+            for i in range(len(filelist)):
+                urllist.put([filelist[i].strip(), i])
+            thread_num = 100
+            threads = []
+            for num in range(1, thread_num + 1):
+                t = webpackfind_class(urllist, args.cookies, uuid)
                 threads.append(t)
                 t.start()
-                time.sleep(1)
             for t in threads:
                 t.join()
         except:
