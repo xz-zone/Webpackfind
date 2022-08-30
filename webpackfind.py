@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-import requests, argparse, sys, re, jsbeautifier, os, json, random, platform, traceback, threading, yaml
+import requests, argparse, sys, re, jsbeautifier, os, json, random, platform, traceback, threading, yaml, chardet
 from requests.packages import urllib3
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
@@ -10,6 +10,7 @@ from selenium import webdriver
 from selenium.webdriver import DesiredCapabilities
 from prettytable import PrettyTable
 from queue import Queue
+from tqdm import *
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -87,22 +88,15 @@ class webpackfind_class(threading.Thread):
         try:
             re = requests.get(URL, headers=header, timeout=30, verify=False, allow_redirects=False)
             if re.status_code == 200:
-                raw = re.content.decode("utf-8", "ignore")
+                cont = re.content
+                charset = chardet.detect(cont)['encoding']
+                raw = cont.decode(charset)
                 return raw
             else:
-                print("[-]Status_code not 200 url:" + URL)
+                # print("[-]Status_code not 200 url:" + URL)
                 return None
         except Exception as e:
-            try:
-                re = requests.get(URL, headers=header, timeout=30, verify=False, allow_redirects=False)
-                if re.status_code == 200:
-                    raw = re.content.decode("utf-8", "ignore")
-                    return raw
-                else:
-                    print("[-]Status_code not 200 url:" + URL)
-                    return None
-            except Exception as e:
-                return None
+            return None
 
     # 写入文件
     def save_result(self, filename="", content="", jurisdiction="at"):
@@ -353,8 +347,8 @@ class webpackfind_class(threading.Thread):
                                                 fname = path + "/" + str(urlparse(new_domain).netloc).replace(":", "_") + "_error_js_url_list.txt"
                                                 self.save_result(fname,new_domain + script[a].get("src").replace("./", "/"))
                                             except Exception as e:
-                                                print(traceback.print_exc())
-                                                print("[E]Write File Failed!!%s" % e)
+                                                tqdm.write(traceback.print_exc())
+                                                tqdm.write("[E]Write File Failed!!%s" % e)
                                             continue
                                         else:
                                             if content.find("static/js") != -1:
@@ -400,10 +394,10 @@ class webpackfind_class(threading.Thread):
                                         else:
                                             url.append(new_domain + script[a].get("src").replace("./", "/"))
                             except Exception as e:
-                                print(traceback.print_exc())
+                                tqdm.write(traceback.print_exc())
                                 continue
                 except Exception as e:
-                    print(traceback.print_exc())
+                    tqdm.write(traceback.print_exc())
                     pass
             # 解决重复url问题
             new_url = []
@@ -427,8 +421,8 @@ class webpackfind_class(threading.Thread):
                         fp.write(jsbeautifier.beautify(content))
                         fp.close()
                     except Exception as e:
-                        print(traceback.print_exc())
-                        print("[E]Write File Failed!!%s" % e)
+                        tqdm.write(traceback.print_exc())
+                        tqdm.write("[E]Write File Failed!!%s" % e)
                         continue
                 else:
                     continue
@@ -441,8 +435,8 @@ class webpackfind_class(threading.Thread):
                     self.save_result(domainfname, url[u])
                 return True
             except Exception as e:
-                print(traceback.print_exc())
-                print("[E]Write File Failed!!%s" % e)
+                tqdm.write(traceback.print_exc())
+                tqdm.write("[E]Write File Failed!!%s" % e)
                 return False
         elif content == None:
             try:
@@ -453,8 +447,8 @@ class webpackfind_class(threading.Thread):
                 self.save_result(domainfname, domain)
                 return True
             except Exception as e:
-                print(traceback.print_exc())
-                print("[E]Write File Failed!!%s" % e)
+                tqdm.write(traceback.print_exc())
+                tqdm.write("[E]Write File Failed!!%s" % e)
                 return False
 
     # 解析包js路径
@@ -475,25 +469,26 @@ class webpackfind_class(threading.Thread):
             try:
                 with open(path, "rt", encoding="UTF-8") as f:
                     now_version = f.read().strip()
-                print("目前版本: \n{}\n".format(now_version))
+                tqdm.write("目前版本: \n{}\n".format(now_version))
                 version_url = "https://raw.githubusercontent.com/xz-zone/Webpackfind/master/version.txt"
                 res = requests.get(url=version_url, headers={"User-Agent": self.uarand()}, timeout=10, verify=False)
                 if res.status_code == 200:
                     new_version = res.text.strip()
                     if now_version == new_version:
-                        print("目前版本最新")
+                        tqdm.write("目前版本最新")
                     else:
                         add_version = str(str(new_version.replace("\r", "").replace("\n", "")).replace(
                             str(now_version.replace("\n", "")), "")).replace("。", "。\n")
                         if add_version:
-                            print("更新内容如下:\n{}".format(add_version))
-                        print("目前版本非最新，建议及时更新...\n地址: https://github.com/xz-zone/Webpackfind/\n")
+                            tqdm.write("目前版本最新")
+                            tqdm.write("更新内容如下:\n{}".format(add_version))
+                        tqdm.write("目前版本非最新，建议及时更新...\n地址: https://github.com/xz-zone/Webpackfind/\n")
                 else:
-                    print("获取版本信息失败...")
+                    tqdm.write("获取版本信息失败...")
             except Exception as e:
-                print("获取版本信息失败...")
+                tqdm.write("获取版本信息失败...")
         else:
-            print("目前版本非最新，建议及时更新...\n地址: https://github.com/xz-zone/Webpackfind/")
+            tqdm.write("目前版本非最新，建议及时更新...\n地址: https://github.com/xz-zone/Webpackfind/")
 
     # 自动选择http/https模式
     def Automatic_selection_scheme(self, URL):
@@ -505,14 +500,7 @@ class webpackfind_class(threading.Thread):
             else:
                 return None
         except Exception as e:
-            try:
-                re = requests.get(URL, headers=header, timeout=10, verify=False, allow_redirects=False)
-                if re.status_code == 200:
-                    return True
-                else:
-                    return None
-            except Exception as e:
-                return None
+            return None
 
     # 读取yml规则库
     def getyml(self):
@@ -534,7 +522,7 @@ class webpackfind_class(threading.Thread):
                     self.rulesJson.append({"type_name": rules[i]["type"], "name": rules[i]["rule"][r]["name"], "regex": rules[i]["rule"][r]["regex"]})
             return self.rulesJson
         except:
-            print(traceback.print_exc())
+            tqdm.write(traceback.print_exc())
             return False
 
     # 匹配规则库
@@ -543,23 +531,73 @@ class webpackfind_class(threading.Thread):
             fopen = open(filename, 'r', encoding='utf-8')
             data = str(fopen.read())
             fopen.close()
-            self.save_result(os.path.dirname(filename) + "/result_rules.txt", "【+】" + filename)
             tb = PrettyTable(align="l", header=True, padding_width=5, field_names=["模块", "名称", "正则", "内容"], title="路径：{}".format(filename))
+            count = 0
             for i in range(len(self.rulesJson)):
                 try:
                     r = re.compile(self.rulesJson[i]['regex'])
                     result = r.findall(str(data))
                     for i in result:
                         tb.add_row([self.rulesJson[i]['type_name'], self.rulesJson[i]['name'], self.rulesJson[i]['regex'], result[i]])
+                        count = count + 1
                 except Exception as e:
                     pass
-                    # print(e)
-                    # print(self[i]['type_name'] + ":" + self.rulesJson[i]['name'] + "===>" +self.rulesJson[i]['regex'])
-            self.save_result(os.path.dirname(filename) + "/result_rules.txt", tb.get_string())
-            print(tb)
+            if count != 0:
+                self.save_result(os.path.dirname(filename) + "/result_rules.txt", "【+】" + filename)
+                self.save_result(os.path.dirname(filename) + "/result_rules.txt", tb.get_string())
+                tqdm.write(tb)
+
+    # API未授权探测并检测接口标题
+    def api_unauthorized(self, url="", filepath=[], path=""):
+        api_tb = PrettyTable(align="l", header=True, padding_width=5, field_names=["URL", "标题", "响应状态"], title="扫描网站：{}".format(url))
+        rules_tb = PrettyTable(align="l", header=True, padding_width=5, field_names=["模块", "名称", "正则", "URL", "内容"], title="扫描网站：{}".format(url))
+        api_count = 0
+        rules_count = 0
+        for filename in filepath:
+            fopen = open(filename, 'r', encoding='utf-8')
+            data = str(fopen.read())
+            fopen.close()
+            data = self.Extract_URL(data)
+            if len(data) != 0:
+                for i in range(len(data)):
+                    data[i] = data[i].replace('./', '/').replace('\\', '')
+                    if data[i][0:2] != "//" and data[i][0] == "/":
+                        header = {"User-Agent": self.uarand(), "Cookie": self.cookies}
+                        try:
+                            info = requests.get(url + data[i].replace('', ''), headers=header, timeout=10, verify=False, allow_redirects=False)
+                            title = ""
+                            try:
+                                cont = info.content
+                                charset = chardet.detect(cont)['encoding']
+                                html_doc = cont.decode(charset)
+                                title = re.findall('<title>(.+)</title>', html_doc)
+                                title = str(title[0])
+                            except:
+                                title = "未识别"
+
+                            for i in range(len(self.rulesJson)):
+                                try:
+                                    r = re.compile(self.rulesJson[i]['regex'])
+                                    result = r.findall(str(info.text))
+                                    for i in result:
+                                        rules_tb.add_row([self.rulesJson[i]['type_name'], self.rulesJson[i]['name'], self.rulesJson[i]['regex'], str(url + data[i].replace('', '')), result[i]])
+                                        rules_count = rules_count + 1
+                                except Exception as e:
+                                    tqdm.write(e)
+                                    pass
+                            api_tb.add_row([str(url + data[i].replace('', '')), title, str(info.status_code)])
+                            api_count = api_count + 1
+                        except Exception as e:
+                           pass
+        if api_count != 0:
+            self.save_result(path + "/api_result.txt", api_tb.get_string())
+            print(api_tb)
+        if rules_count != 0:
+            self.save_result(path + "/api_rules_result.txt", rules_tb.get_string())
+            print(rules_tb)
 
     # 启动函数
-    def go_start(self, url, i=0, uuid=""):
+    def go_start(self, url, num=1):
         try:
             scheme = urlparse(url).scheme
             # 自动判断url地址是否添加http/https协议
@@ -568,7 +606,7 @@ class webpackfind_class(threading.Thread):
             else:
                 if self.Automatic_selection_scheme("http://" + url) == None:
                     if self.Automatic_selection_scheme("https://" + url) == None:
-                        print("【扫描失败】：{}\n".format(str(url)))
+                        tqdm.write("【扫描失败】：{}\n".format(str(url)))
                         return False
                     else:
                         url = "https://" + url
@@ -596,23 +634,30 @@ class webpackfind_class(threading.Thread):
                         # 匹配规则库
                         self.Matching_rules(eachfile)
 
+                        # 探测未授权接口
+                        self.api_unauthorized(url, eachfile, path)
+
                         # 在所有的urls中提取出目标站的子域名
                         info = self.find_subdomain(eachinfo, path, url)
 
-                        # 表格方式输出
-                        tb = PrettyTable(align="l", header=True, padding_width=5, field_names=["序号", "子域名"], title="扫描完成：{}".format(url))
-
+                        # 子域名表格方式输出
+                        domain_tb = PrettyTable(align="l", header=True, padding_width=5, field_names=["序号", "子域名"], title="扫描完成：{}".format(url))
+                        domain_count = 0
                         for i in range(len(info)):
-                            tb.add_row([i, info[i]])
+                            domain_tb.add_row([i, info[i]])
+                            domain_count = domain_count + 1
 
-                        print(tb)
+                        if domain_count != 0:
+                            print(domain_tb)
 
-                    print("【扫描成功】路径：{}\n".format(path))
+                    tqdm.write("【扫描成功】路径：{}\n".format(path))
+                    pbar.update(100 / num)
             else:
-                print("【扫描失败】：{}\n".format(str(url)))
+                tqdm.write("【扫描失败】：{}\n".format(str(url)))
+                pbar.update(100 / num)
         except:
-            print(traceback.print_exc())
-            print(help())
+            tqdm.write(traceback.print_exc())
+            tqdm.write(help())
 
     # 主函数
     def run(self):
@@ -623,7 +668,7 @@ class webpackfind_class(threading.Thread):
 
 # 接收外部参数
 def parse_args():
-    print('''               _                      _      _             _          
+    tqdm.write('''               _                      _      _             _          
                   | |                    | |   / _(_)         | |
      __      _____| |__  _ __   __ _  ___| | _| |_ _ _ __   __| |
      \ \ /\ / / _ \ '_ \| '_ \ / _` |/ __| |/ /  _| | '_ \ / _` |
@@ -639,7 +684,6 @@ def parse_args():
     parser.add_argument("-c", "--cookies", help="设置自定义Cookie，场景:需要登录才能爬取js信息")
     parser.add_argument("-update", "--update", type=int, default=0, help="检查版本更新")
     return parser.parse_args()
-
 
 # 帮助文档输出
 def help():
@@ -661,7 +705,6 @@ def help():
         python3 webpackfind.py -update 1
          '''
 
-
 if __name__ == "__main__":
     urllib3.disable_warnings()
     args = parse_args()
@@ -675,34 +718,52 @@ if __name__ == "__main__":
     urllist = Queue(-1)
 
     if args.update != 0:
-        # 检查更新readFile
+        # 检查更新
         webpackfind_class(urllist, args.cookies, uuid).get_version()
     elif args.jsfile != None:
-        # 格式化代码
+        # 调用函数
         webpackfind = webpackfind_class([], args.cookies, uuid)
+
+        #遍历指定目录，并格式化js源码
         webpackfind.eachFormatJs(args.jsfile)
-        eachinfo = webpackfind.eachFile(args.jsfile)
+
+        # 遍历读取文件目录中的文件
+        eachinfo = webpackfind.eachFile(args.jsfile, 1)
+
+        # 遍历读取文件路径
+        eachfile = webpackfind.eachFile(args.jsfile, 2)
+
+        # 匹配规则库
+        webpackfind.Matching_rules(eachfile)
+
+        # 在所有的urls中提取出目标站的子域名
         info = webpackfind.find_subdomain(eachinfo, args.jsfile, os.path.basename(os.path.realpath(args.jsfile)))
+
         # 表格方式输出
         tb = PrettyTable(align="l", header=True, padding_width=5, field_names=["序号", "子域名"], title="扫描完成：{}".format(args.jsfile))
 
         for i in range(len(info)):
             tb.add_row([i, info[i]])
 
-        print(tb)
+        tqdm.write(tb)
     elif args.urlfile != None:
+        # 声明进度条长度
+        pbar = tqdm(total=100, position=0, desc="扫描完成度")
+
         try:
-            webpackfind_class(urllist, args.cookies, uuid).go_start(args.urlfile, 0)
+            webpackfind_class(urllist, args.cookies, uuid).go_start(args.urlfile, 1)
         except:
-            print(traceback.print_exc())
-            print(help())
+            tqdm.write(traceback.print_exc())
+            tqdm.write(help())
     elif args.file != None:
+        # 声明进度条长度
+        pbar = tqdm(total=100, position=0, desc="扫描完成度")
+
         try:
-            urllistResult = []
             file = open(str(args.file), 'r', encoding='utf-8')
             filelist = file.readlines()
             for i in range(len(filelist)):
-                urllist.put([filelist[i].strip(), i])
+                urllist.put([filelist[i].strip(), len(filelist)])
             thread_num = 100
             threads = []
             for num in range(1, thread_num + 1):
@@ -712,7 +773,7 @@ if __name__ == "__main__":
             for t in threads:
                 t.join()
         except:
-            print(traceback.print_exc())
-            print(help())
+            tqdm.write(traceback.print_exc())
+            tqdm.write(help())
     else:
-        print(help())
+        tqdm.write(help())
