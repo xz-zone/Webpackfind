@@ -4,6 +4,7 @@
 import time
 from prettytable import PrettyTable
 from uuid import uuid4
+from urllib.parse import urlparse
 
 class Utils():
 
@@ -48,9 +49,6 @@ class Utils():
                 count = count + 1
                 tb.add_row(array[i])
 
-            # if count != 0:
-            #     print(tb)
-
             if path != "":
                 self.save_result(path, tb.get_string())
 
@@ -64,3 +62,25 @@ class Utils():
     def tellTime(self):
         localtime = "[" + str(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))) + "] "
         return localtime
+
+    # 判断数组中是否存在某个值
+    def is_array_value(self, array=[], value=""):
+        if value == "":
+            return False
+        for t in range(len(array)):
+            if array[t] in value:
+                return False
+        return True
+
+    # 获取文件名
+    def get_filename(url_str):
+        url = urlparse(url_str)
+        i = len(url.path) - 1
+        while i > 0:
+            if url.path[i] == '/':
+                break
+            i = i - 1
+        filename = url.path[i+1:len(url.path)]
+        if not filename.strip():
+            return False
+        return filename

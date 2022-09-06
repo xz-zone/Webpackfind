@@ -54,6 +54,8 @@ class UrlRequest():
 
     # 调用phantomjs模仿浏览器请求
     def phantomjs_requests(self, url):
+        content = ""
+        js_array = []
         sys = platform.system()
         if sys == "Windows":
             jspath = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), 'config', 'phantomjs_windows.exe')
@@ -77,6 +79,23 @@ class UrlRequest():
             content = driver.page_source
             if urlparse(driver.current_url).netloc != urlparse(url).netloc:
                 content = self.Extract_html(url)
+            else:
+                # 解决layui模块加载问题
+                js = """
+                    var jspath = []
+                    for(var i=0;i<=document.scripts.length;i++){
+                        try {
+                            if(document.scripts[i].src != ""){
+                                jspath.push(document.scripts[i].src)
+                            }
+                        } catch(err){
+                            break;
+                        }
+                    }
+                    return jspath
+                """
+                js_array = driver.execute_script(js)
+                return content, js_array
         except Exception as e:
             content = self.Extract_html(url)
-        return content
+        return content, js_array

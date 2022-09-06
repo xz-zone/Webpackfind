@@ -109,6 +109,8 @@ python3 -m pip install -r requirements.txt
 
 2022-09-01 优化整体压缩美化代码。
 
+2022-09-06 优化匹配正则，输出文件。
+
 ## 0x06 反馈
 
 Webpackfind 是一个免费且开源的项目，我们欢迎任何人为其开发和进步贡献力量。

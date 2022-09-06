@@ -70,96 +70,116 @@ class webpackfind_class(threading.Thread):
         if urlparse(domain).netloc:
 
             # url自动化遍历读取文件
-            content = UrlRequest(self.cookies).phantomjs_requests(domain)
+            content, js_array = UrlRequest(self.cookies).phantomjs_requests(domain)
+
+            for i in range(len(js_array)):
+                url.append(js_array[i])
+
             if content:
 
                 content = BeautifulSoup(content, "html.parser")
+
                 script = content.find_all('script')
-                if script:
-                    try:
-                        for a in range(len(script)):
-                            if urlparse(script[a].get("src")).netloc != "":
-                                if urlparse(self.domain).netloc != urlparse(script[a].get("src")).netloc:
-                                    domain = script[a].get("src")
+
+                for a in range(len(script)):
+                    if script:
+                        try:
+                            for a in range(len(script)):
+                                if urlparse(script[a].get("src")).netloc != "":
+                                    if urlparse(self.domain).netloc != urlparse(script[a].get("src")).netloc:
+                                        domain = script[a].get("src")
+                                    else:
+                                        domain = self.domain
                                 else:
                                     domain = self.domain
-                            else:
-                                domain = self.domain
-                            if domain == None:
-                                # 读取js文件路径
-                                js_content = FileOperation().resolve_path(str(script[a]))
-                                for i in range(len(js_content)):
-                                    url.append(self.domain + "/" + js_content[i])
-                                url = list(set(url))
-                            else:
-                                try:
-                                    scheme = "http:"
-                                    if urlparse(domain).scheme != "":
-                                        scheme = str(urlparse(domain).scheme) + ":"
-                                    if urlparse(domain).path:
-                                        new_domain = scheme + "//" + urlparse(domain).netloc + "/" + str(urlparse(domain).path).split("/")[1]
-                                    else:
-                                        new_domain = scheme + "//" + urlparse(domain).netloc
-                                    if script[a].get("data-main") != None:
-                                        domain_url = new_domain + os.path.normpath(script[a].get("src").replace("./", "/"))
+
+                                if script[a].get("src") != None and script[a].get("src")[0:2] == "//":
+                                    scr_path = os.path.basename(script[a].get("src").replace("./", "/"))
+                                    if os.path.basename(script[a].get("src").replace("./", "/")).find("?") != -1:
+                                        scr_path = os.path.basename(script[a].get("src").replace("./", "/"))[0:os.path.basename(script[a].get("src").replace("./", "/")).find("?")]
+                                    if len(js_array) > 0:
+                                        if Utils.is_array_value(js_array, Utils.get_filename(scr_path)) == True:
+                                            continue
+                                elif domain == None:
+                                    # 读取js文件路径
+                                    js_content = FileOperation().resolve_path(str(script[a]))
+                                    for i in range(len(js_content)):
+                                        url.append(self.domain + "/" + js_content[i])
+                                    url = list(set(url))
+                                else:
+                                    try:
+                                        scheme = "http:"
+                                        if urlparse(domain).scheme != "":
+                                            scheme = str(urlparse(domain).scheme) + ":"
                                         if urlparse(domain).path:
-                                            if script[a].get("data-main").find(str(urlparse(new_domain).path).split("/")[1]) != -1:
-                                                domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")
-                                                if os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")[:1] != "/":
-                                                    domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + "/" + os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")
-                                                else:
-                                                    domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")
-                                        url.append(domain_url)
-                                    elif script[a].get("src") != None:
-                                        if "http" in script[a].get("src"):
-                                            url.append(script[a].get("src").replace("./", "/"))
-                                        elif "runtime." in script[a].get("src") or "app." in script[a].get("src") or "finance." in script[a].get("src") or "vendor." in script[a].get("src") or "manifest." in script[a].get("src"):
-                                            if urlparse(os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).netloc == "":
-                                                domain_url = new_domain + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
-                                            else:
-                                                domain_url = new_domain + str(scheme + os.path.normpath(script[a].get("src")).replace("\\","/").replace("./", "/")).replace(new_domain, "")
-                                            if urlparse(new_domain).path:
-                                                if os.path.normpath(script[a].get("src")).replace("\\","/").replace("./", "/")[:1] != "/":
-                                                    if urlparse(os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).netloc == "":
-                                                        domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
-                                                    else:
-                                                        domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + "/" + str(scheme + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).replace(new_domain, "")
-                                                else:
-                                                    if urlparse(os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).netloc == "":
-                                                        domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
-                                                    else:
-                                                        domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + str(scheme + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).replace(new_domain, "")
-                                            content = UrlRequest(self.cookies).Extract_html(domain_url)
-                                            if content == None:
-                                                try:
-                                                    if domain == None:
-                                                        domainfname = os.path.join(path, str(urlparse(self.domain).netloc).replace(":", "_") + "_error_js_url_list.txt")
-                                                    else:
-                                                        domainfname = os.path.join(path, str(urlparse(domain).netloc).replace(":", "_") + "_error_js_url_list.txt")
-                                                    FileOperation().save_result(domainfname, domain)
-                                                except Exception as e:
-                                                    self.log.error("{} 【写入文件失败】：{}".format(Utils().tellTime(), str(e)))
-                                                continue
-                                            else:
-                                                # 读取js文件路径
-                                                js_content = FileOperation().resolve_path(str(content))
-                                                for i in range(len(js_content)):
-                                                    url.append(new_domain + "/" + js_content[i])
-                                                url = list(set(url))
+                                            new_domain = scheme + "//" + urlparse(domain).netloc + "/" + str(urlparse(domain).path).split("/")[1]
                                         else:
-                                            if urlparse(script[a].get("src").replace("./", "/")).scheme == "":
-                                                if urlparse(script[a].get("src").replace("./", "/")).netloc != "":
-                                                    url.append(scheme + script[a].get("src").replace("./", "/"))
+                                            new_domain = scheme + "//" + urlparse(domain).netloc
+                                        if script[a].get("data-main") != None:
+                                            domain_url = new_domain + os.path.normpath(script[a].get("src").replace("./", "/"))
+                                            if urlparse(domain).path:
+                                                if script[a].get("data-main").find(str(urlparse(new_domain).path).split("/")[1]) != -1:
+                                                    domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")
+                                                    if os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")[:1] != "/":
+                                                        domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + "/" + os.path.normpath(script[a].get("data-main")).replace("\\", "/").replace("./", "/")
+                                            url.append(domain_url)
+                                        elif script[a].get("src") != None:
+                                            if "http" in script[a].get("src"):
+                                                url.append(script[a].get("src").replace("./", "/"))
+                                            elif "runtime." in script[a].get("src") or "app." in script[a].get("src") or "finance." in script[a].get("src") or "vendor." in script[a].get("src") or "manifest." in script[a].get("src"):
+                                                if urlparse(os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).netloc == "":
+                                                    domain_url = new_domain + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                                 else:
-                                                    url.append(new_domain + script[a].get("src").replace("./", "/"))
+                                                    domain_url = new_domain + str(scheme + os.path.normpath(script[a].get("src")).replace("\\","/").replace("./", "/")).replace(new_domain, "")
+                                                if urlparse(new_domain).path:
+                                                    if os.path.normpath(script[a].get("src")).replace("\\","/").replace("./", "/")[:1] != "/":
+                                                        if urlparse(os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).netloc == "":
+                                                            domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + "/" + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                                        else:
+                                                            domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + "/" + str(scheme + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).replace(new_domain, "")
+                                                    else:
+                                                        if urlparse(os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).netloc == "":
+                                                            domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
+                                                        else:
+                                                            domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + str(scheme + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).replace(new_domain, "")
+                                                content = UrlRequest(self.cookies).Extract_html(domain_url)
+                                                if content == None:
+                                                    try:
+                                                        if domain == None:
+                                                            domainfname = os.path.join(path, str(urlparse(self.domain).netloc).replace(":", "_") + "_error_js_url_list.txt")
+                                                        else:
+                                                            domainfname = os.path.join(path, str(urlparse(domain).netloc).replace(":", "_") + "_error_js_url_list.txt")
+                                                        FileOperation().save_result(domainfname, domain)
+                                                    except Exception as e:
+                                                        self.log.error("{} 【写入文件失败】：{}".format(Utils().tellTime(), str(e)))
+                                                    continue
+                                                else:
+                                                    # 读取js文件路径
+                                                    js_content = FileOperation().resolve_path(str(content))
+                                                    for i in range(len(js_content)):
+                                                        url.append(new_domain + "/" + js_content[i])
+                                                    url = list(set(url))
                                             else:
-                                                url.append(new_domain + script[a].get("src").replace("./", "/"))
-                                except Exception as e:
-                                    self.log.error("{} 【解析js出错】：{}".format(Utils().tellTime(), str(e)))
-                                    continue
-                    except Exception as e:
-                        self.log.error("{} 【解析js出错】：{}".format(Utils().tellTime(), str(e)))
-                        pass
+                                                script_text = script[a].get("src").replace("./", "/")
+                                                if script_text[0] != "/":
+                                                    script_text = "/" + script_text
+                                                if len(js_array) > 0:
+                                                    if Utils.is_array_value(js_array, os.path.basename(script[a].get("src").replace("./", "/"))) == True:
+                                                        continue
+
+                                                if urlparse(script_text).scheme == "":
+                                                    if urlparse(script_text).netloc != "":
+                                                        url.append(scheme + script_text)
+                                                    else:
+                                                        url.append(new_domain + script_text)
+                                                else:
+                                                    url.append(new_domain + script_text)
+                                    except Exception as e:
+                                        self.log.error("{} 【解析js出错】：{}".format(Utils().tellTime(), str(e)))
+                                        continue
+                        except Exception as e:
+                            self.log.error("{} 【解析js出错】：{}".format(Utils().tellTime(), str(e)))
+                            pass
 
                 # 解决重复url问题
                 new_url = []
@@ -257,13 +277,6 @@ class webpackfind_class(threading.Thread):
             url, i = self.urllist.get()
             self.main(url)
             self.urllist.task_done()
-        # # 创建线程池
-        # pool = ThreadPoolExecutor(20)
-        #
-        # allTask = [pool.submit(self.main, url.strip()) for url in filelist]
-        #
-        # # 开启异步线程池
-        # wait(allTask, return_when=ALL_COMPLETED)
 
 
 

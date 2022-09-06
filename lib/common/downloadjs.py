@@ -6,7 +6,6 @@ from lib.common.urlrequest import UrlRequest
 from lib.common.Printlog import Printlog
 from lib.common.utils import Utils
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
-from tqdm import *
 
 class DownloadJs():
 
@@ -23,9 +22,6 @@ class DownloadJs():
     # 主函数
     def run(self):
 
-        # 开启进度条资源
-        # self.downloadpbar = tqdm(total=len(self.urllist), position=0, desc="【{}】 下载完成进度".format(self.domainlog))
-
         # 创建线程池
         pool = ThreadPoolExecutor(20)
 
@@ -33,9 +29,6 @@ class DownloadJs():
 
         # 开启异步线程池
         wait(allTask, return_when=ALL_COMPLETED)
-
-        # 关闭进度条资源
-        # self.downloadpbar.close()
 
         # log日志输出
         self.log.info("{} 【{}】 【下载完成】总数：{} 成功：{} 失败：{}".format(Utils().tellTime(), self.domainlog, str(len(self.urllist)), str(self.success), str(self.error)))
@@ -47,8 +40,6 @@ class DownloadJs():
         # 请求接口
         content = UrlRequest(self.cookie).Extract_html(url)
 
-        # 更新进度条
-        # self.downloadpbar.update()
         if content:
             self.success = self.success + 1
             fname = self.path + "/" + url.split('/')[-1]

@@ -31,20 +31,22 @@ class unauthorized():
 
         self.log.info("{} 【{}】 未授权检测模块加载完成".format(Utils().tellTime(), self.domainlog))
 
-        # 创建线程池
-        pool = ThreadPoolExecutor(len(filepath))
+        if len(filepath) > 0:
 
-        allTask = [pool.submit(self.api_unauthorized, path) for path in filepath]
+            # 创建线程池
+            pool = ThreadPoolExecutor(len(filepath))
 
-        # 开启异步线程池
-        wait(allTask, return_when=ALL_COMPLETED)
+            allTask = [pool.submit(self.api_unauthorized, path) for path in filepath]
 
-        # 表格方式输出
-        Utils().gettable(["URL", "标题", "响应状态"], "扫描网站：{}".format(self.domain), self.api_result, os.path.join(self.path, 'table_result.txt'))
+            # 开启异步线程池
+            wait(allTask, return_when=ALL_COMPLETED)
 
-        Utils().gettable(["模块", "名称", "正则", "URL", "内容"], "扫描网站：{}".format(self.domain), self.rules_result, os.path.join(self.path, 'table_result.txt'))
+            # 表格方式输出
+            Utils().gettable(["URL", "标题", "响应状态"], "扫描网站：{}".format(self.domain), self.api_result, os.path.join(self.path, 'table_result.txt'))
 
-        self.log.info("{} 【{}】 未授权检测模块结果保存路径：{}".format(Utils().tellTime(), self.domainlog, os.path.join(self.path, 'table_result.txt')))
+            Utils().gettable(["模块", "名称", "URL", "内容"], "扫描网站：{}".format(self.domain), self.rules_result, os.path.join(self.path, 'table_result.txt'))
+
+            self.log.info("{} 【{}】 未授权检测模块结果保存路径：{}".format(Utils().tellTime(), self.domainlog, os.path.join(self.path, 'table_result.txt')))
 
         # log日志输出
         self.log.info("{} 【{}】 未授权检测模块扫描完成".format(Utils().tellTime(), self.domainlog))
@@ -76,8 +78,8 @@ class unauthorized():
                                 try:
                                     r = re.compile(self.rulesJson[i]['regex'])
                                     result = r.findall(str(info.text))
-                                    for i in result:
-                                        self.rules_result.append([self.rulesJson[i]['type_name'], self.rulesJson[i]['name'], self.rulesJson[i]['regex'], str(self.domain + data[i].replace('', '')), result[i]])
+                                    for ib in range(len(result)):
+                                        self.rules_result.append([self.rulesJson[i]['type_name'], self.rulesJson[i]['name'], str(self.domain + data[i].replace('', '')), result[ib][0]])
                                 except Exception as e:
                                     pass
                         except Exception as e:

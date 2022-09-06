@@ -141,15 +141,16 @@ class Regular():
                 try:
                     r = re.compile(rulesJson[i]['regex'])
                     result = r.findall(str(data))
-                    for i in result:
-                        array.append([rulesJson[i]['type_name'], rulesJson[i]['name'], rulesJson[i]['regex'], result[i]])
+                    for ib in range(len(result)):
+                        array.append([rulesJson[i]['type_name'], rulesJson[i]['name'], result[ib][0]])
                         count = count + 1
                 except Exception as e:
                     pass
             if count != 0:
                 self.save_result(os.path.join(os.path.dirname(filename), "/result_rules.txt"), "【+】" + filename)
                 # 子域名表格方式输出
-                Utils().gettable(["模块", "名称", "正则", "内容"], "路径：{}".format(filename), array, os.path.join(os.path.dirname(filename), "table_result.txt"))
+
+                Utils().gettable(["模块", "名称", "内容"], "路径：{}".format(filename), array, os.path.join(os.path.dirname(filename), "table_result.txt"))
 
         except Exception as e:
             return
