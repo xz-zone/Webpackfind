@@ -66,6 +66,7 @@ python3 -m pip install -r requirements.txt
 | python3 webpackfind.py -j ./js/test.com/                   	| 遍历本地目录中的js文件并且格式化js文件、提取信息泄露                            |
 | python3 webpackfind.py -f ./url.txt    | 读取本地url文件批量遍历url中js                            |
 | python3 webpackfind.py -c "name=test;" -u http://domain.com    | 设置自定义Cookie，场景:需要登录才能爬取js信息                            |
+| python3 webpackfind.py -d "Authorization: bearer 123456\nContent-Type: application/json\n" -u http://domain.com    | 设置自定义headers                            |
 | python3 webpackfind.py -update 1    | 检查本地`webpackfind.py`是否与github.com是否一致                            |
 
 ## 0x05 版本更新
@@ -110,6 +111,8 @@ python3 -m pip install -r requirements.txt
 2022-09-01 优化整体压缩美化代码。
 
 2022-09-06 优化匹配正则，输出文件。
+
+2022-09-09 增加自定义herder头部。
 
 ## 0x06 反馈
 

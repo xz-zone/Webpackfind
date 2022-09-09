@@ -9,10 +9,10 @@ from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 
 class DownloadJs():
 
-    def __init__(self, domainlog="", urllist=[], path="", cookie=""):
+    def __init__(self, domainlog="", urllist=[], path="", headers={}):
         self.urllist = urllist
         self.path = path
-        self.cookie = cookie
+        self.headers = headers
         self.log = Printlog(path).get_logger()
         self.downloadpbar = None
         self.success = 0
@@ -38,7 +38,7 @@ class DownloadJs():
         url = url.replace("//", "/").replace(":/", "://")
 
         # 请求接口
-        content = UrlRequest(self.cookie).Extract_html(url)
+        content = UrlRequest(self.headers).Extract_html(url)
 
         if content:
             self.success = self.success + 1

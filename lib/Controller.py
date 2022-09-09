@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-import os
-from tqdm import *
+
 from lib.common.utils import Utils
 from lib.WebpackFind import webpackfind_class
 from lib.common.toupdate import ToUpdate
@@ -20,6 +19,11 @@ class Controller():
         if self.options.cookies == None:
             self.options.cookies = ""
 
+        # 声明全局调用headers
+        headers = {"User-Agent": FileOperation().uarand(), "Cookie": self.options.cookies}
+        if self.options.headers != None:
+            headers = Utils().handle_headers(headers, self.options.headers)
+
         # 声明全局uuid
         uuid = Utils().random_uuid() + "/"
 
@@ -29,13 +33,13 @@ class Controller():
 
         elif self.options.jsfile != None:
 
-            webpackfind_class([], self.options.cookies, uuid).jsfile_main(self.options.jsfile)
+            webpackfind_class([], uuid, None, headers).jsfile_main(self.options.jsfile)
 
         elif self.options.urlfile != None:
 
             pbar = tqdm(total=1, position=0, desc="完成进度")
 
-            webpackfind_class([], self.options.cookies, uuid, pbar).main(self.options.urlfile)
+            webpackfind_class([], uuid, pbar, headers).main(self.options.urlfile)
 
             pbar.close()
 
@@ -52,7 +56,7 @@ class Controller():
                 pbar = tqdm(total=len(filelist), position=0, desc="完成进度")
                 threads = []
                 for num in range(1, len(filelist) + 1):
-                    t = webpackfind_class(urllist, self.options.cookies, uuid, pbar)
+                    t = webpackfind_class(urllist, uuid, pbar, headers)
                     threads.append(t)
                     t.start()
 

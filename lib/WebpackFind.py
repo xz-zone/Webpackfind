@@ -11,14 +11,12 @@ from lib.common.urlrequest import UrlRequest
 from lib.common.Printlog import Printlog
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 
 class webpackfind_class(threading.Thread):
 
-    def __init__(self, urllist=[], cookies="", uuid="", pbar=None):
+    def __init__(self, urllist=[], uuid="", pbar=None, headers={}):
         threading.Thread.__init__(self)
         self.urllist = urllist
-        self.cookies = cookies
         self.uuid = uuid
         self.domain = ""
         # 初始化加载规则库
@@ -26,6 +24,7 @@ class webpackfind_class(threading.Thread):
         self.log = None
         self.domainlog = ""
         self.pbar = pbar
+        self.headers = headers
 
     # js读取本地文件
     def jsfile_main(self, jsfile=""):
@@ -48,7 +47,7 @@ class webpackfind_class(threading.Thread):
             Regular().find_subdomain(os.path.basename(os.path.realpath(jsfile)), eachinfo, jsfile, os.path.basename(os.path.realpath(jsfile)))
 
             # 探测未授权接口
-            unauthorized(os.path.basename(os.path.realpath(jsfile)), self.cookies, os.path.basename(os.path.realpath(jsfile)), self.rulesJson, jsfile).run(eachfile)
+            unauthorized(os.path.basename(os.path.realpath(jsfile)), self.headers, os.path.basename(os.path.realpath(jsfile)), self.rulesJson, jsfile).run(eachfile)
 
             self.log.info("{} 【{}】 扫描成功 路径：{}".format(Utils().tellTime(), os.path.basename(os.path.realpath(jsfile)), jsfile))
 
@@ -57,7 +56,8 @@ class webpackfind_class(threading.Thread):
 
     # 获取js文件url
     def get_js(self, domain="", path=""):
-        domain = UrlRequest(self.cookies).Auto_select_protocol(domain)
+
+        domain = UrlRequest(self.headers).Auto_select_protocol(domain)
 
         self.log.info("{} 【{}】 协议头检测：{}".format(Utils().tellTime(), self.domainlog, str(domain)))
 
@@ -70,7 +70,7 @@ class webpackfind_class(threading.Thread):
         if urlparse(domain).netloc:
 
             # url自动化遍历读取文件
-            content, js_array = UrlRequest(self.cookies).phantomjs_requests(domain)
+            content, js_array = UrlRequest(self.headers).phantomjs_requests(domain)
 
             for i in range(len(js_array)):
                 url.append(js_array[i])
@@ -98,7 +98,7 @@ class webpackfind_class(threading.Thread):
                                     if os.path.basename(script[a].get("src").replace("./", "/")).find("?") != -1:
                                         scr_path = os.path.basename(script[a].get("src").replace("./", "/"))[0:os.path.basename(script[a].get("src").replace("./", "/")).find("?")]
                                     if len(js_array) > 0:
-                                        if Utils.is_array_value(js_array, Utils.get_filename(scr_path)) == True:
+                                        if Utils().is_array_value(js_array, Utils().get_filename(scr_path)) == True:
                                             continue
                                 elif domain == None:
                                     # 读取js文件路径
@@ -142,7 +142,7 @@ class webpackfind_class(threading.Thread):
                                                             domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")
                                                         else:
                                                             domain_url = urlparse(new_domain).scheme + "://" + urlparse(new_domain).netloc + urlparse(new_domain).path + str(scheme + os.path.normpath(script[a].get("src")).replace("\\", "/").replace("./", "/")).replace(new_domain, "")
-                                                content = UrlRequest(self.cookies).Extract_html(domain_url)
+                                                content = UrlRequest(self.headers).Extract_html(domain_url)
                                                 if content == None:
                                                     try:
                                                         if domain == None:
@@ -164,7 +164,7 @@ class webpackfind_class(threading.Thread):
                                                 if script_text[0] != "/":
                                                     script_text = "/" + script_text
                                                 if len(js_array) > 0:
-                                                    if Utils.is_array_value(js_array, os.path.basename(script[a].get("src").replace("./", "/"))) == True:
+                                                    if Utils().is_array_value(js_array, os.path.basename(script[a].get("src").replace("./", "/"))) == True:
                                                         continue
 
                                                 if urlparse(script_text).scheme == "":
@@ -221,6 +221,7 @@ class webpackfind_class(threading.Thread):
 
     # 入口函数
     def main(self, domain=""):
+
         # 声明保存路径
         if urlparse(domain).netloc == "":
             path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'tmp', self.uuid, str(domain).replace(":", "_"), '')
@@ -246,7 +247,7 @@ class webpackfind_class(threading.Thread):
             FileOperation().save_result(os.path.join(path, 'result.txt'), "【URL】：{}".format(str(domain)), "w")
 
             # 批量下载js
-            DownloadJs(self.domainlog, info, path, self.cookies).run()
+            DownloadJs(self.domainlog, info, path, self.headers).run()
 
             # 遍历读取文件目录中的文件
             eachinfo = FileOperation().eachFile(path, 1)
@@ -261,7 +262,7 @@ class webpackfind_class(threading.Thread):
             Regular().find_subdomain(self.domainlog, eachinfo, path, domain)
 
             # 探测未授权接口
-            unauthorized(self.domainlog, self.cookies, domain, self.rulesJson, path).run(eachfile)
+            unauthorized(self.domainlog, self.headers, domain, self.rulesJson, path).run(eachfile)
 
             self.log.info("{} 【{}】 扫描成功 路径：{}".format(Utils().tellTime(), self.domainlog, str(path)))
 

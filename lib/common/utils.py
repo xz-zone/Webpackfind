@@ -73,7 +73,7 @@ class Utils():
         return True
 
     # 获取文件名
-    def get_filename(url_str):
+    def get_filename(self, url_str):
         url = urlparse(url_str)
         i = len(url.path) - 1
         while i > 0:
@@ -84,3 +84,14 @@ class Utils():
         if not filename.strip():
             return False
         return filename
+
+    # headers头部信息处理
+    def handle_headers(self, primaryheaders={}, new_headers=""):
+        new_headers = new_headers.split("\\n")
+        while "" in new_headers:
+            new_headers.remove("")
+        for i in new_headers:
+            if ": " not in i:
+                break
+            primaryheaders[i.split(": ")[0]] = i.split(": ")[1]
+        return primaryheaders

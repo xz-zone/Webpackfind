@@ -4,7 +4,6 @@
 import re, requests, chardet, os
 from lib.common.utils import Utils
 from lib.common.regular import Regular
-from lib.common.fileoperation import FileOperation
 from requests.packages import urllib3
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -15,9 +14,9 @@ from lib.common.Printlog import Printlog
 # 未授权检测
 class unauthorized():
 
-    def __init__(self, domainlog="", cookies="", domain="", rulesJson=[], path=""):
+    def __init__(self, domainlog="", headers={}, domain="", rulesJson=[], path=""):
         urllib3.disable_warnings()
-        self.cookies = cookies
+        self.headers = headers
         self.rulesJson = rulesJson
         self.domain = domain
         self.path = path
@@ -63,8 +62,7 @@ class unauthorized():
                     data[i] = data[i].replace('./', '/').replace('\\', '')
                     if data[i][0:2] != "//" and data[i][0] == "/":
                         try:
-                            header = {"User-Agent": FileOperation().uarand(), "Cookie": self.cookies}
-                            info = requests.get(self.domain + data[i].replace('', ''), headers=header, timeout=10, verify=False, allow_redirects=False)
+                            info = requests.get(self.domain + data[i].replace('', ''), headers=self.headers, timeout=10, verify=False, allow_redirects=False)
                             try:
                                 cont = info.content
                                 charset = chardet.detect(info)['encoding']

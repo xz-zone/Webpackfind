@@ -35,8 +35,3 @@ class Printlog():
         self.logger.removeHandler(self.chd)
         self.fh.close()
         self.chd.close()
-
-if __name__ == '__main__':
-    info = Printlog("E:\\渗透工具\\Webpackfind-master\\tmp\\df20d4cb8f0c\\p4psearch.1688.com\\").get_logger()
-    print(logging.NOTSET)
-    info.error("111111111111111")

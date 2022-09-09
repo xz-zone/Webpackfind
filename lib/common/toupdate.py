@@ -3,6 +3,7 @@
 
 import os, requests
 from tqdm import *
+from lib.common.fileoperation import FileOperation
 
 class ToUpdate():
 
@@ -15,7 +16,7 @@ class ToUpdate():
                     now_version = f.read().strip()
                 print("目前版本: \n{}\n".format(now_version))
                 version_url = "https://raw.githubusercontent.com/xz-zone/Webpackfind/master/version.txt"
-                res = requests.get(url=version_url, headers={"User-Agent": File.uarand()}, timeout=10, verify=False)
+                res = requests.get(url=version_url, headers={"User-Agent": FileOperation().uarand()}, timeout=10, verify=False)
                 if res.status_code == 200:
                     new_version = res.text.strip()
                     if now_version == new_version:
