@@ -62,24 +62,26 @@ class unauthorized():
                     data[i] = data[i].replace('./', '/').replace('\\', '')
                     if data[i][0:2] != "//" and data[i][0] == "/":
                         try:
-                            info = requests.get(self.domain + data[i].replace('', ''), headers=self.headers, timeout=10, verify=False, allow_redirects=False)
-                            try:
-                                cont = info.content
-                                charset = chardet.detect(info)['encoding']
-                                html_doc = cont.decode(charset)
-                                title = re.findall('<title>(.+)</title>', html_doc)
-                                title = str(title[0])
-                            except Exception as e:
-                                title = "未识别"
-                            self.api_result.append([str(self.domain + data[i].replace('', '')), title, str(info.status_code)])
-                            for i in range(len(self.rulesJson)):
+                            if Utils().filter_content(data[i].replace('', '')):
+                                info = requests.get(self.domain + data[i].replace('', ''), headers=self.headers, timeout=10, verify=False, allow_redirects=False)
                                 try:
-                                    r = re.compile(self.rulesJson[i]['regex'])
-                                    result = r.findall(str(info.text))
-                                    for ib in range(len(result)):
-                                        self.rules_result.append([self.rulesJson[i]['type_name'], self.rulesJson[i]['name'], str(self.domain + data[i].replace('', '')), result[ib][0]])
+                                    cont = info.content
+                                    charset = chardet.detect(info)['encoding']
+                                    html_doc = cont.decode(charset)
+                                    title = re.findall('<title>(.+)</title>', html_doc)
+                                    title = str(title[0])
                                 except Exception as e:
-                                    pass
+                                    title = "未识别"
+                                self.api_result.append([str(self.domain + data[i].replace('', '')), title, str(info.status_code)])
+                                for i in range(len(self.rulesJson)):
+                                    try:
+                                        r = re.compile(self.rulesJson[i]['regex'])
+                                        result = r.findall(str(info.text))
+                                        for ib in range(len(result)):
+                                            if Utils().filter_content(data[i].replace('', '')) and Utils().filter_content(result[ib][0]):
+                                                self.rules_result.append([self.rulesJson[i]['type_name'], self.rulesJson[i]['name'], str(self.domain + data[i].replace('', '')), result[ib][0]])
+                                    except Exception as e:
+                                        pass
                         except Exception as e:
                             pass
         except Exception as e:

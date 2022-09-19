@@ -114,6 +114,8 @@ python3 -m pip install -r requirements.txt
 
 2022-09-09 增加自定义herder头部。
 
+2022-09-19 优化匹配正则。
+
 ## 0x06 反馈
 
 Webpackfind 是一个免费且开源的项目，我们欢迎任何人为其开发和进步贡献力量。

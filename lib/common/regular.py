@@ -91,13 +91,15 @@ class Regular():
                 if subdomain not in subdomains:
                     if Utils().White_list_domain(subdomain):
                         if pattern.match(subdomain):
-                            subdomains.append(subdomain)
-                            self.save_result(fname, subdomain)
+                            if Utils().filter_content(subdomain):
+                                subdomains.append(subdomain)
+                                self.save_result(fname, subdomain)
                         else:
                             check_ip = re.compile('(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5]):(6[0-5]{2}[0-3][0-5]|[1-5]\d{4}|[1-9]\d{1,3}|[0-9])|(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])')
                             if check_ip.match(subdomain):
-                                subdomains.append(subdomain)
-                                self.save_result(fname, subdomain)
+                                if Utils().filter_content(subdomain):
+                                    subdomains.append(subdomain)
+                                    self.save_result(fname, subdomain)
         subdomains = list(set(subdomains))
         new_subdomains = []
         for i in range(len(subdomains)):
@@ -105,6 +107,7 @@ class Regular():
 
         # 子域名表格方式输出
         Utils().gettable(["序号", "子域名"], "扫描完成：{}".format(domain), new_subdomains, os.path.join(mainurl, "table_result.txt"))
+
         self.log.info("{} 【{}】 子域名提取结果保存路径：{}".format(Utils().tellTime(), domainlog, os.path.join(mainurl, "table_result.txt")))
 
         self.log.info("{} 【{}】 子域名提取规则模块扫描完成".format(Utils().tellTime(), domainlog))
@@ -142,8 +145,9 @@ class Regular():
                     r = re.compile(rulesJson[i]['regex'])
                     result = r.findall(str(data))
                     for ib in range(len(result)):
-                        array.append([rulesJson[i]['type_name'], rulesJson[i]['name'], result[ib][0]])
-                        count = count + 1
+                        if Utils().filter_content(result[ib][0]):
+                            array.append([rulesJson[i]['type_name'], rulesJson[i]['name'], result[ib][0]])
+                            count = count + 1
                 except Exception as e:
                     pass
             if count != 0:

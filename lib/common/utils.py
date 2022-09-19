@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import time
+import re
 from prettytable import PrettyTable
 from uuid import uuid4
 from urllib.parse import urlparse
@@ -95,3 +96,13 @@ class Utils():
                 break
             primaryheaders[i.split(": ")[0]] = i.split(": ")[1]
         return primaryheaders
+
+    # 过滤文件内容
+    def filter_content(self, content=""):
+        if len(content.strip()) > 2:
+            if re.match(r"^./(.*)", content.strip(),  re.M|re.I) == None:
+                if re.match(r"^/(.*).js$", content.strip(),  re.M|re.I) == None:
+                    filter = ["DD/MM/YYYY", "MM/DD/YYYY", "MM/D/YYYY", "YYYY/MM/DD", "YYYY/MM/DD", "YYYY/M/D", "DD/M/YYYY", "application/x-www-form-urlencoded", "multipart/form-data", "application/xml", "text/html", "image/jpeg", "image/gif", "image/png", "text/plain", "text/xml", "static/js", "text/css", "static/css", "static/js/", "static/css/", "http://www.w3.org/2000/svg", "http://www.w3.org/1999/xlink", "http://www.w3.org/1998/Math/MathML", "http://www.w3.org/TR/REC-html40", "http://www.w3.org/2000/xmlns/", "http://www.w3.org/XML/1998/namespace"]
+                    if content.strip() not in filter:
+                        return True
+        return False
