@@ -5,6 +5,7 @@ import re, requests, chardet, os
 from lib.common.utils import Utils
 from lib.common.regular import Regular
 from requests.packages import urllib3
+from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -63,23 +64,38 @@ class unauthorized():
                     if data[i][0:2] != "//" and data[i][0] == "/":
                         try:
                             if Utils().filter_content(data[i].replace('', '')):
-                                info = requests.get(self.domain + data[i].replace('', ''), headers=self.headers, timeout=10, verify=False, allow_redirects=False)
+                                url = self.domain + data[i].replace('', '')
+                                status_code = 200
+                                info = requests.get(url, headers=self.headers, timeout=10, verify=False, allow_redirects=False)
                                 try:
                                     cont = info.content
                                     charset = chardet.detect(info)['encoding']
                                     html_doc = cont.decode(charset)
                                     title = re.findall('<title>(.+)</title>', html_doc)
                                     title = str(title[0])
+                                    status_code = info.status_code
                                 except Exception as e:
                                     title = "未识别"
-                                self.api_result.append([str(self.domain + data[i].replace('', '')), title, str(info.status_code)])
+                                if info.status_code == 404:
+                                    url = urlparse(self.domain).scheme + "://" + urlparse(self.domain).netloc + "/" + data[i].replace('', '')
+                                    info1 = requests.get(url, headers=self.headers, timeout=10, verify=False, allow_redirects=False)
+                                    try:
+                                        cont = info1.content
+                                        charset = chardet.detect(info1)['encoding']
+                                        html_doc = cont.decode(charset)
+                                        title = re.findall('<title>(.+)</title>', html_doc)
+                                        title = str(title[0])
+                                        status_code = info1.status_code
+                                    except Exception as e:
+                                        title = "未识别"
+                                self.api_result.append([str(url), title, str(status_code)])
                                 for i in range(len(self.rulesJson)):
                                     try:
                                         r = re.compile(self.rulesJson[i]['regex'])
                                         result = r.findall(str(info.text))
                                         for ib in range(len(result)):
                                             if Utils().filter_content(data[i].replace('', '')) and Utils().filter_content(result[ib][0]):
-                                                self.rules_result.append([self.rulesJson[i]['type_name'], self.rulesJson[i]['name'], str(self.domain + data[i].replace('', '')), result[ib][0]])
+                                                self.rules_result.append([self.rulesJson[i]['type_name'], self.rulesJson[i]['name'], str(url), result[ib][0]])
                                     except Exception as e:
                                         pass
                         except Exception as e:

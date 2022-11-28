@@ -120,6 +120,8 @@ python3 -m pip install -r requirements.txt
 
 2022-09-28 优化细节。
 
+2022-11-28 优化细节，匹配更多api接口。
+
 ## 0x06 反馈
 
 Webpackfind 是一个免费且开源的项目，我们欢迎任何人为其开发和进步贡献力量。
