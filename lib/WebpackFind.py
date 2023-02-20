@@ -222,7 +222,8 @@ class webpackfind_class(threading.Thread):
     # 入口函数
     def main(self, domain=""):
         # 做下vue url存在 /#/ 问题
-        domain = domain.replace("/#/", "/")
+        if "/#/" in domain:
+            domain = domain.split("/#/")[0]
 
         # 声明保存路径
         if urlparse(domain).netloc == "":
